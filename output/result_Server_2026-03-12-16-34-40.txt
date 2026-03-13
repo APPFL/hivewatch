@@ -1,0 +1,24 @@
+[34m[1mappfl: ✅[0m[2026-03-12 16:34:40,927 server]: Logging to ./output/result_Server_2026-03-12-16-34-40.txt
+[34m[1mappfl: ✅[0m[2026-03-12 16:35:58,831 server]: Received [1/2] GetConfiguration request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:35:58,868 server]: Received GetGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:37:16,120 server]: Received [2/2] GetConfiguration request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:37:16,221 server]: Received GetGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:37:17,600 server]: Received InvokeCustomAction set_sample_size request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:37:17,605 server]: Received InvokeCustomAction set_sample_size request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:37:49,580 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:37:49,583 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 15.93,
+ 'pre_val_loss': 2.3005918742744784,
+ 'round': 1,
+ 'val_accuracy': 66.1,
+ 'val_loss': 6.196350957178007}
+[34m[1mappfl: ✅[0m[2026-03-12 16:37:50,224 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:37:50,227 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 15.93,
+ 'pre_val_loss': 2.3005918742744784,
+ 'round': 1,
+ 'val_accuracy': 75.73,
+ 'val_loss': 3.7935920642439727}
+[34m[1mappfl: ✅[0m[2026-03-12 16:38:48,348 server]: Terminating the server ...

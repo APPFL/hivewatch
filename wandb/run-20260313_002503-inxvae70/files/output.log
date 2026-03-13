@@ -1,0 +1,8 @@
+[34m[1mappfl: ✅[0m[2026-03-13 00:25:17,419 server]: Logging to ./output/result_Server_2026-03-13-00-25-17.txt
+[34m[1mappfl: ✅[0m[2026-03-13 00:26:15,884 server]: Received [1/2] GetConfiguration request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:26:16,080 server]: Received GetGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:27:31,621 server]: Received [2/2] GetConfiguration request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:27:31,652 server]: Received GetGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:27:32,785 server]: Received InvokeCustomAction set_sample_size request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:27:32,789 server]: Received InvokeCustomAction set_sample_size request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:35:57,930 server]: Terminating the server ...

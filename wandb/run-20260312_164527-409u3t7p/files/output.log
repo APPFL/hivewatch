@@ -1,0 +1,118 @@
+[34m[1mappfl: ✅[0m[2026-03-12 16:45:29,819 server]: Logging to ./output/result_Server_2026-03-12-16-45-29.txt
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:23,627 server]: Received [1/2] GetConfiguration request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:23,662 server]: Received GetGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:36,379 server]: Received [2/2] GetConfiguration request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:36,413 server]: Received GetGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:37,389 server]: Received InvokeCustomAction set_sample_size request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:37,436 server]: Received InvokeCustomAction set_sample_size request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:49,210 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:49,396 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:49,397 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 15.93,
+ 'pre_val_loss': 2.3005918742744784,
+ 'round': 1,
+ 'val_accuracy': 76.01,
+ 'val_loss': 3.6925497882685083}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:46:49,399 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 15.93,
+ 'pre_val_loss': 2.3005918742744784,
+ 'round': 1,
+ 'val_accuracy': 66.79,
+ 'val_loss': 5.435298199866228}
+[fedviz debug] metadata={}
+/home/abhijit/APPFL/src/appfl/agent/server.py:504: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  model = torch.load(buffer, map_location="cpu")
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:05,442 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:05,447 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 49.96,
+ 'pre_val_loss': 1.6331813282268062,
+ 'round': 2,
+ 'val_accuracy': 68.03,
+ 'val_loss': 4.0377044267715165}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:05,634 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:05,636 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 49.96,
+ 'pre_val_loss': 1.6331813282268062,
+ 'round': 2,
+ 'val_accuracy': 77.55,
+ 'val_loss': 2.5070295227561026}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:22,400 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:22,403 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 73.55,
+ 'pre_val_loss': 0.7065709681267951,
+ 'round': 3,
+ 'val_accuracy': 68.08,
+ 'val_loss': 3.5160778586272223}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:23,324 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:23,326 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 73.55,
+ 'pre_val_loss': 0.7065709681267951,
+ 'round': 3,
+ 'val_accuracy': 78.78,
+ 'val_loss': 1.9073452203516748}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:42,609 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:42,613 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 85.5,
+ 'pre_val_loss': 0.4251493020042492,
+ 'round': 4,
+ 'val_accuracy': 68.21,
+ 'val_loss': 2.502923801446417}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:43,530 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:47:43,532 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 85.5,
+ 'pre_val_loss': 0.4251493020042492,
+ 'round': 4,
+ 'val_accuracy': 78.83,
+ 'val_loss': 1.6021098348365468}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:03,896 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:03,900 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 92.53,
+ 'pre_val_loss': 0.22054208959838387,
+ 'round': 5,
+ 'val_accuracy': 68.47,
+ 'val_loss': 2.4684506692704122}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:04,618 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:04,620 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 92.53,
+ 'pre_val_loss': 0.22054208959838387,
+ 'round': 5,
+ 'val_accuracy': 78.02,
+ 'val_loss': 1.4614479744889934}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:23,826 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:23,832 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 93.46,
+ 'pre_val_loss': 0.19524133994368612,
+ 'round': 6,
+ 'val_accuracy': 68.7,
+ 'val_loss': 2.0860655695010144}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:24,470 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:24,473 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 93.46,
+ 'pre_val_loss': 0.19524133994368612,
+ 'round': 6,
+ 'val_accuracy': 79.23,
+ 'val_loss': 1.312810684465299}
+[fedviz debug] metadata={}
+[34m[1mappfl: ✅[0m[2026-03-12 16:48:37,668 server]: Terminating the server ...

@@ -1,0 +1,204 @@
+Metadata-Version: 2.1
+Name: fedviz
+Version: 0.1.0
+Summary: Framework-agnostic monitoring toolkit for federated and distributed ML
+License: MIT
+Project-URL: Repository, https://github.com/your-org/fedviz
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Provides-Extra: wandb
+Requires-Dist: wandb>=0.16; extra == "wandb"
+Provides-Extra: flower
+Requires-Dist: flwr>=1.5; extra == "flower"
+Provides-Extra: ray
+Requires-Dist: ray>=2.9; extra == "ray"
+Provides-Extra: all
+Requires-Dist: wandb>=0.16; extra == "all"
+Requires-Dist: flwr>=1.5; extra == "all"
+Requires-Dist: ray>=2.9; extra == "all"
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: wandb>=0.16; extra == "dev"
+Requires-Dist: flwr>=1.5; extra == "dev"
+
+# fedviz
+
+**Framework-agnostic monitoring for federated and distributed ML.**  
+Drop-in like W&B, but built for federated training.
+
+---
+
+## Install
+
+```bash
+pip install fedviz           # core only (zero dependencies)
+pip install fedviz[wandb]    # + W&B integration
+pip install fedviz[flower]   # + Flower adapter
+pip install fedviz[ray]      # + Ray adapter
+pip install fedviz[all]      # everything
+```
+
+---
+
+## Quickstart — any framework
+
+```python
+import fedviz
+from fedviz import ClientMetrics
+
+fedviz.init(wandb_project="my-fl-project", algorithm="FedAvg")
+
+for rnd in range(num_rounds):
+    fedviz.log_round_start(rnd)
+
+    # ... your training code, any framework ...
+
+    fedviz.log_round(
+        round=rnd,
+        clients=[
+            ClientMetrics(
+                client_id="node-01",
+                local_accuracy=0.85,
+                local_loss=0.32,
+                num_samples=500,
+                gradient_norm=1.24,
+                bytes_sent=4_200_000,
+                train_time_sec=12.1,
+                cpu_pct=72.0,
+                lat=37.7, lng=-122.4, city="San Francisco", country="US",
+            )
+        ],
+        global_accuracy=0.84,
+        global_loss=0.29,
+    )
+
+fedviz.finish()
+```
+
+---
+
+## Flower — one wrapper, zero client changes
+
+```python
+from flwr.server.strategy import FedProx
+from fedviz.adapters.flower import FedVizStrategy
+import fedviz
+
+fedviz.init(wandb_project="my-project", algorithm="FedProx")
+
+strategy = FedVizStrategy(inner=FedProx(...))  # that's it
+
+fl.server.start_server(strategy=strategy, ...)
+fedviz.finish()
+```
+
+Clients just include metrics in their `fit()` return dict — no fedviz import required:
+
+```python
+def fit(self, parameters, config):
+    # ... train ...
+    return parameters, len(dataset), {
+        "gradient_norm":  1.24,
+        "train_time_sec": 12.1,
+        "cpu_pct":        72.0,
+        "bytes_sent":     4_200_000,
+    }
+```
+
+---
+
+## Ray — decorator or manual
+
+```python
+from fedviz.adapters.ray_adapter import fedviz_ray_round
+
+@fedviz_ray_round(round_arg="server_round")
+def aggregate(server_round, futures):
+    results = ray.get(futures)
+    # ... aggregation ...
+    return global_acc, global_loss, results  # fedviz auto-logs
+
+for rnd in range(num_rounds):
+    futures = [client.train.remote(rnd) for client in selected]
+    aggregate(server_round=rnd, futures=futures)
+```
+
+---
+
+## Adopt an existing W&B run
+
+```python
+import wandb, fedviz
+
+wandb.init(project="my-project")   # your existing code
+fedviz.init()                      # auto-adopts the active run
+```
+
+---
+
+## What gets logged to W&B
+
+| Metric namespace | What it tracks |
+|---|---|
+| `round/accuracy`, `round/loss` | Global model performance per round |
+| `round/participation_rate` | % of selected clients that completed |
+| `round/num_stragglers` | Straggler count per round |
+| `round/duration_sec` | Wall time per round |
+| `comm/total_bytes_mb` | Total communication volume |
+| `comm/bytes_per_client_mb` | Communication efficiency |
+| `agg/gradient_norm` | Aggregated gradient norm |
+| `agg/gradient_divergence` | Std dev of per-client norms — **non-IID signal** |
+| `agg/aggregation_time_sec` | Server aggregation compute time |
+| `client/<id>/accuracy` | Per-client accuracy |
+| `client/<id>/gradient_norm` | Per-client gradient norm |
+| `client/<id>/staleness` | Async FL staleness (rounds behind) |
+| `client/<id>/bytes_sent_mb` | Per-client upload volume |
+| `client/<id>/train_time_sec` | Per-client training time |
+| `sys/<id>/cpu_pct` | Per-client CPU utilisation |
+| `sys/<id>/gpu_util_pct` | Per-client GPU utilisation |
+| `event/client_dropout` | Dropout counter per round |
+| `event/comm_failure` | Communication failure counter |
+
+All metrics use `round` as the x-axis via `wandb.define_metric()`.  
+Checkpoints are logged as versioned W&B Artifacts.  
+Client dropouts and comm failures fire W&B Alerts.
+
+---
+
+## Custom emitter
+
+fedviz is fully pluggable. Implement `.emit(event: FLEvent)` and pass it in:
+
+```python
+class MyMLflowEmitter:
+    def emit(self, event):
+        if event.event_type == EventType.ROUND_END:
+            mlflow.log_metrics({
+                "accuracy": event.round_metrics.global_accuracy,
+                "loss":     event.round_metrics.global_loss,
+            }, step=event.round)
+
+    def finish(self):
+        mlflow.end_run()
+
+fedviz.init(emitters=[MyMLflowEmitter()])
+```
+
+---
+
+## Architecture
+
+```
+Your training code  ──► fedviz.log_round(...)
+                              │
+                    ┌─────────▼──────────┐
+                    │   FLEvent schema    │  ← universal envelope
+                    └─────────┬──────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+       WandbEmitter    FedVizServer     CustomEmitter
+       (wandb.log)    (SQLite + SSE)   (MLflow, etc.)
+```
+
+The schema owns the data. Emitters own the transformation. Neither knows about the other.

@@ -1,0 +1,14 @@
+{"time":"2026-03-12T16:34:36.411847191-04:00","level":"INFO","msg":"stream: starting","core version":"0.22.1"}
+{"time":"2026-03-12T16:34:37.143060091-04:00","level":"INFO","msg":"stream: created new stream","id":"r9yfywh4"}
+{"time":"2026-03-12T16:34:37.143189491-04:00","level":"INFO","msg":"handler: started","stream_id":"r9yfywh4"}
+{"time":"2026-03-12T16:34:37.143901191-04:00","level":"INFO","msg":"stream: started","id":"r9yfywh4"}
+{"time":"2026-03-12T16:34:37.145060591-04:00","level":"INFO","msg":"sender: started","stream_id":"r9yfywh4"}
+{"time":"2026-03-12T16:34:37.145038291-04:00","level":"INFO","msg":"writer: started","stream_id":"r9yfywh4"}
+{"time":"2026-03-12T16:38:48.353489352-04:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"updating run metadata","runtime_seconds":0.0025281}],"total_operations":1}}
+{"time":"2026-03-12T16:38:49.990765847-04:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-12T16:38:50.023826747-04:00","level":"INFO","msg":"stream: closing","id":"r9yfywh4"}
+{"time":"2026-03-12T16:38:50.023993347-04:00","level":"ERROR","msg":"sender: sendSummary called after exit"}
+{"time":"2026-03-12T16:38:50.084803947-04:00","level":"WARN","msg":"sender: received Exit record more than once, ignoring"}
+{"time":"2026-03-12T16:38:50.503783554-04:00","level":"INFO","msg":"handler: closed","stream_id":"r9yfywh4"}
+{"time":"2026-03-12T16:38:50.503960454-04:00","level":"INFO","msg":"sender: closed","stream_id":"r9yfywh4"}
+{"time":"2026-03-12T16:38:50.503993254-04:00","level":"INFO","msg":"stream: closed","id":"r9yfywh4"}

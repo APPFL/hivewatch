@@ -1,0 +1,183 @@
+[34m[1mappfl: ✅[0m[2026-03-12 16:51:14,198 server]: Logging to ./output/result_Server_2026-03-12-16-51-14.txt
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:12,226 server]: Received [1/2] GetConfiguration request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:12,313 server]: Received GetGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:22,144 server]: Received [2/2] GetConfiguration request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:22,172 server]: Received GetGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:23,081 server]: Received InvokeCustomAction set_sample_size request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:23,096 server]: Received InvokeCustomAction set_sample_size request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:37,527 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:37,531 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 15.93,
+ 'pre_val_loss': 2.3005918742744784,
+ 'round': 1,
+ 'val_accuracy': 65.92,
+ 'val_loss': 6.5109153264647075}
+/home/abhijit/APPFL/src/appfl/agent/server.py:504: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  model = torch.load(buffer, map_location="cpu")
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:38,165 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:38,167 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 15.93,
+ 'pre_val_loss': 2.3005918742744784,
+ 'round': 1,
+ 'val_accuracy': 75.9,
+ 'val_loss': 3.6515811036346824}
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:52,618 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:52,620 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 48.74,
+ 'pre_val_loss': 1.7838365864601864,
+ 'round': 2,
+ 'val_accuracy': 66.95,
+ 'val_loss': 4.326416887295474}
+[fedviz] round   1  acc=75.9000  loss=3.6516  clients=2
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:53,221 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:52:53,223 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 48.74,
+ 'pre_val_loss': 1.7838365864601864,
+ 'round': 2,
+ 'val_accuracy': 78.06,
+ 'val_loss': 2.955759338512542}
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:12,736 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:12,739 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 75.18,
+ 'pre_val_loss': 0.658463285322402,
+ 'round': 3,
+ 'val_accuracy': 68.16,
+ 'val_loss': 2.9973436510486966}
+[fedviz] round   2  acc=78.0600  loss=2.9558  clients=2
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:14,003 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:14,006 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 75.18,
+ 'pre_val_loss': 0.658463285322402,
+ 'round': 3,
+ 'val_accuracy': 78.65,
+ 'val_loss': 2.244836952655938}
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:32,839 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:32,842 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 85.89,
+ 'pre_val_loss': 0.38569847121834755,
+ 'round': 4,
+ 'val_accuracy': 68.53,
+ 'val_loss': 2.955362231108793}
+[fedviz] round   3  acc=78.6500  loss=2.2448  clients=2
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:34,309 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:34,311 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 85.89,
+ 'pre_val_loss': 0.38569847121834755,
+ 'round': 4,
+ 'val_accuracy': 78.44,
+ 'val_loss': 1.6958241170379007}
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:52,503 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:52,505 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 89.78,
+ 'pre_val_loss': 0.29101874710173364,
+ 'round': 5,
+ 'val_accuracy': 68.6,
+ 'val_loss': 2.403815821477562}
+[fedviz] round   4  acc=78.4400  loss=1.6958  clients=2
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:53,148 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:53:53,151 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 89.78,
+ 'pre_val_loss': 0.29101874710173364,
+ 'round': 5,
+ 'val_accuracy': 79.05,
+ 'val_loss': 1.4488633814131378}
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:11,538 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:11,541 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 92.31,
+ 'pre_val_loss': 0.23503265039888538,
+ 'round': 6,
+ 'val_accuracy': 68.8,
+ 'val_loss': 2.2006408902490215}
+[fedviz] round   5  acc=79.0500  loss=1.4489  clients=2
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:12,219 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:12,221 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 92.31,
+ 'pre_val_loss': 0.23503265039888538,
+ 'round': 6,
+ 'val_accuracy': 78.88,
+ 'val_loss': 1.089396083620703}
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:30,913 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:30,917 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 93.41,
+ 'pre_val_loss': 0.20222993030147568,
+ 'round': 7,
+ 'val_accuracy': 69.68,
+ 'val_loss': 1.9737025096917609}
+[fedviz] round   6  acc=78.8800  loss=1.0894  clients=2
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:31,801 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:31,803 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 93.41,
+ 'pre_val_loss': 0.20222993030147568,
+ 'round': 7,
+ 'val_accuracy': 79.33,
+ 'val_loss': 0.8850053383666239}
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:50,224 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:50,226 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 95.0,
+ 'pre_val_loss': 0.165802900365014,
+ 'round': 8,
+ 'val_accuracy': 69.31,
+ 'val_loss': 2.0609968999388872}
+[fedviz] round   7  acc=79.3300  loss=0.8850  clients=2
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:50,870 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:54:50,872 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 95.0,
+ 'pre_val_loss': 0.165802900365014,
+ 'round': 8,
+ 'val_accuracy': 81.38,
+ 'val_loss': 1.0167834242438054}
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:07,463 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:07,463 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:07,466 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 94.87,
+ 'pre_val_loss': 0.1548592897286271,
+ 'round': 9,
+ 'val_accuracy': 79.29,
+ 'val_loss': 1.0413759455179712}
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:07,468 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 94.87,
+ 'pre_val_loss': 0.1548592897286271,
+ 'round': 9,
+ 'val_accuracy': 70.54,
+ 'val_loss': 1.6387791641198906}
+[fedviz] round   8  acc=81.3800  loss=1.0168  clients=2[fedviz] round   8  acc=81.3800  loss=1.0168  clients=0
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:22,045 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:22,048 server]: Received meta data from Client1:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 95.4,
+ 'pre_val_loss': 0.14493056812626162,
+ 'round': 10,
+ 'val_accuracy': 79.84,
+ 'val_loss': 1.0253455121615889}
+
+[fedviz] round   9  acc=70.5400  loss=1.6388  clients=2
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:23,047 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:23,049 server]: Received meta data from Client2:
+{'current_local_steps': 100,
+ 'pre_val_accuracy': 95.4,
+ 'pre_val_loss': 0.14493056812626162,
+ 'round': 10,
+ 'val_accuracy': 68.68,
+ 'val_loss': 1.8493670817393406}
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:26,205 server]: Received InvokeCustomAction close_connection request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:26,784 server]: Received InvokeCustomAction close_connection request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-12 16:55:27,223 server]: Terminating the server ...
+[fedviz] round  10  acc=68.6800  loss=1.8494  clients=2

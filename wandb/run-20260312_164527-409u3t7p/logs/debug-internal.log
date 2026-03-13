@@ -1,0 +1,14 @@
+{"time":"2026-03-12T16:45:27.837537539-04:00","level":"INFO","msg":"stream: starting","core version":"0.22.1"}
+{"time":"2026-03-12T16:45:28.79202249-04:00","level":"INFO","msg":"stream: created new stream","id":"409u3t7p"}
+{"time":"2026-03-12T16:45:28.79216859-04:00","level":"INFO","msg":"handler: started","stream_id":"409u3t7p"}
+{"time":"2026-03-12T16:45:28.79231149-04:00","level":"INFO","msg":"stream: started","id":"409u3t7p"}
+{"time":"2026-03-12T16:45:28.79239199-04:00","level":"INFO","msg":"writer: started","stream_id":"409u3t7p"}
+{"time":"2026-03-12T16:45:28.79247919-04:00","level":"INFO","msg":"sender: started","stream_id":"409u3t7p"}
+{"time":"2026-03-12T16:48:37.677566411-04:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"updating run metadata","runtime_seconds":0.005166901}],"total_operations":1}}
+{"time":"2026-03-12T16:48:38.105022665-04:00","level":"INFO","msg":"stream: closing","id":"409u3t7p"}
+{"time":"2026-03-12T16:48:38.105955766-04:00","level":"ERROR","msg":"sender: sendSummary called after exit"}
+{"time":"2026-03-12T16:48:38.107144566-04:00","level":"WARN","msg":"sender: received Exit record more than once, ignoring"}
+{"time":"2026-03-12T16:48:38.112847968-04:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-12T16:48:38.375516563-04:00","level":"INFO","msg":"handler: closed","stream_id":"409u3t7p"}
+{"time":"2026-03-12T16:48:38.376774563-04:00","level":"INFO","msg":"sender: closed","stream_id":"409u3t7p"}
+{"time":"2026-03-12T16:48:38.377129864-04:00","level":"INFO","msg":"stream: closed","id":"409u3t7p"}

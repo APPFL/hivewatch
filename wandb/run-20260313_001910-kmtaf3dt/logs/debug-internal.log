@@ -1,0 +1,10 @@
+{"time":"2026-03-13T00:19:14.949880757-04:00","level":"INFO","msg":"stream: starting","core version":"0.22.1"}
+{"time":"2026-03-13T00:19:16.953669618-04:00","level":"INFO","msg":"stream: created new stream","id":"kmtaf3dt"}
+{"time":"2026-03-13T00:19:16.966144119-04:00","level":"INFO","msg":"handler: started","stream_id":"kmtaf3dt"}
+{"time":"2026-03-13T00:19:16.966503219-04:00","level":"INFO","msg":"stream: started","id":"kmtaf3dt"}
+{"time":"2026-03-13T00:19:16.966673219-04:00","level":"INFO","msg":"writer: started","stream_id":"kmtaf3dt"}
+{"time":"2026-03-13T00:19:16.966898519-04:00","level":"INFO","msg":"sender: started","stream_id":"kmtaf3dt"}
+{"time":"2026-03-13T00:23:40.617725263-04:00","level":"INFO","msg":"stream: closing","id":"kmtaf3dt"}
+{"time":"2026-03-13T00:23:40.031359655-04:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"updating run metadata","runtime_seconds":0.134076402}],"total_operations":1}}
+{"time":"2026-03-13T00:23:41.316870072-04:00","level":"ERROR","msg":"sender: sendSummary called after exit"}
+{"time":"2026-03-13T00:23:41.989174481-04:00","level":"WARN","msg":"sender: received Exit record more than once, ignoring"}

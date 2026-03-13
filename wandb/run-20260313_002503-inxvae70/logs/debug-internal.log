@@ -1,0 +1,12 @@
+{"time":"2026-03-13T00:25:07.139305846-04:00","level":"INFO","msg":"stream: starting","core version":"0.22.1"}
+{"time":"2026-03-13T00:25:10.538873354-04:00","level":"INFO","msg":"stream: created new stream","id":"inxvae70"}
+{"time":"2026-03-13T00:25:10.538963954-04:00","level":"INFO","msg":"handler: started","stream_id":"inxvae70"}
+{"time":"2026-03-13T00:25:10.539114554-04:00","level":"INFO","msg":"stream: started","id":"inxvae70"}
+{"time":"2026-03-13T00:25:10.539186854-04:00","level":"INFO","msg":"writer: started","stream_id":"inxvae70"}
+{"time":"2026-03-13T00:25:10.539211954-04:00","level":"INFO","msg":"sender: started","stream_id":"inxvae70"}
+{"time":"2026-03-13T00:28:58.895416105-04:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/abhiijit/my-fl-project/inxvae70/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2026-03-13T00:35:57.935370097-04:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"updating run metadata","runtime_seconds":0.002831}],"total_operations":1}}
+{"time":"2026-03-13T00:35:58.256175498-04:00","level":"INFO","msg":"stream: closing","id":"inxvae70"}
+{"time":"2026-03-13T00:35:58.256340698-04:00","level":"ERROR","msg":"sender: sendSummary called after exit"}
+{"time":"2026-03-13T00:35:58.256981198-04:00","level":"WARN","msg":"sender: received Exit record more than once, ignoring"}
+{"time":"2026-03-13T00:35:58.5488417-04:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}

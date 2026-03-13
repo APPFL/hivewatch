@@ -1,0 +1,270 @@
+[34m[1mappfl: ✅[0m[2026-03-13 00:36:08,839 server]: Logging to ./output/result_Server_2026-03-13-00-36-08.txt
+[34m[1mappfl: ✅[0m[2026-03-13 00:37:34,826 server]: Received [1/2] GetConfiguration request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:37:35,296 server]: Received GetGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:37:40,081 server]: Received [2/2] GetConfiguration request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:37:40,112 server]: Received GetGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:37:42,128 server]: Received InvokeCustomAction set_sample_size request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:37:42,137 server]: Received InvokeCustomAction set_sample_size request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:12,639 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:12,845 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:12,847 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 37.6,
+ 'current_local_steps': 100,
+ 'gradient_norm': 1.6741198945202054,
+ 'pre_val_accuracy': 15.93,
+ 'pre_val_loss': 2.3005918742744784,
+ 'ram_mb': 1764.818944,
+ 'round': 1,
+ 'train_time_sec': 0.0019159317016601562,
+ 'val_accuracy': 75.97,
+ 'val_loss': 3.6425145689848883}
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:12,850 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 37.4,
+ 'current_local_steps': 100,
+ 'gradient_norm': 1.5685371919161564,
+ 'pre_val_accuracy': 15.93,
+ 'pre_val_loss': 2.3005918742744784,
+ 'ram_mb': 1728.274432,
+ 'round': 1,
+ 'train_time_sec': 0.0016977787017822266,
+ 'val_accuracy': 66.41,
+ 'val_loss': 5.560170223758479}
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:31,662 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:31,864 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:31,866 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 73.5,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.8417313708764727,
+ 'pre_val_accuracy': 51.18,
+ 'pre_val_loss': 1.4818065257588768,
+ 'ram_mb': 1750.216704,
+ 'round': 2,
+ 'train_time_sec': 0.001888275146484375,
+ 'val_accuracy': 68.11,
+ 'val_loss': 3.8126272912238055}
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:31,869 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 73.0,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.8162800144814079,
+ 'pre_val_accuracy': 51.18,
+ 'pre_val_loss': 1.4818065257588768,
+ 'ram_mb': 1780.523008,
+ 'round': 2,
+ 'train_time_sec': 0.0017688274383544922,
+ 'val_accuracy': 77.93,
+ 'val_loss': 2.440418678484145}
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:51,759 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:51,991 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:51,993 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 77.6,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.3852870716867186,
+ 'pre_val_accuracy': 75.95,
+ 'pre_val_loss': 0.6533123740724697,
+ 'ram_mb': 1749.368832,
+ 'round': 3,
+ 'train_time_sec': 0.003437519073486328,
+ 'val_accuracy': 68.15,
+ 'val_loss': 3.147329457246574}
+[34m[1mappfl: ✅[0m[2026-03-13 00:38:51,996 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 77.7,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.530270396814628,
+ 'pre_val_accuracy': 75.95,
+ 'pre_val_loss': 0.6533123740724697,
+ 'ram_mb': 1789.345792,
+ 'round': 3,
+ 'train_time_sec': 0.002437591552734375,
+ 'val_accuracy': 77.92,
+ 'val_loss': 1.8731764739106416}
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:10,110 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:10,114 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 73.8,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.774232462580616,
+ 'pre_val_accuracy': 84.28,
+ 'pre_val_loss': 0.44386951089095156,
+ 'ram_mb': 1754.345472,
+ 'round': 4,
+ 'train_time_sec': 0.005052328109741211,
+ 'val_accuracy': 67.97,
+ 'val_loss': 2.3608344717390217}
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:11,428 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:11,430 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 73.8,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.9113307940038492,
+ 'pre_val_accuracy': 84.28,
+ 'pre_val_loss': 0.44386951089095156,
+ 'ram_mb': 1788.903424,
+ 'round': 4,
+ 'train_time_sec': 0.0035300254821777344,
+ 'val_accuracy': 78.78,
+ 'val_loss': 1.7756028050070356}
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:31,380 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:31,386 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 74.3,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.16390249327859607,
+ 'pre_val_accuracy': 89.91,
+ 'pre_val_loss': 0.2957064140659229,
+ 'ram_mb': 1751.937024,
+ 'round': 5,
+ 'train_time_sec': 0.0033757686614990234,
+ 'val_accuracy': 68.64,
+ 'val_loss': 2.2359894347039}
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:34,419 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:34,422 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 74.5,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.34474200111566755,
+ 'pre_val_accuracy': 89.91,
+ 'pre_val_loss': 0.2957064140659229,
+ 'ram_mb': 1787.592704,
+ 'round': 5,
+ 'train_time_sec': 0.0019462108612060547,
+ 'val_accuracy': 78.72,
+ 'val_loss': 1.3039493008404022}
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:53,281 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:53,285 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 75.4,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.36599405008698266,
+ 'pre_val_accuracy': 94.67,
+ 'pre_val_loss': 0.16949486650621434,
+ 'ram_mb': 1753.894912,
+ 'round': 6,
+ 'train_time_sec': 0.002749204635620117,
+ 'val_accuracy': 68.84,
+ 'val_loss': 2.113275277386805}
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:54,069 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:39:54,074 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 75.0,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.8219225627350204,
+ 'pre_val_accuracy': 94.67,
+ 'pre_val_loss': 0.16949486650621434,
+ 'ram_mb': 1791.586304,
+ 'round': 6,
+ 'train_time_sec': 0.0019366741180419922,
+ 'val_accuracy': 78.71,
+ 'val_loss': 1.166295721272754}
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:10,463 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:10,467 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 75.4,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.3190728095759711,
+ 'pre_val_accuracy': 94.55,
+ 'pre_val_loss': 0.1646271069551919,
+ 'ram_mb': 1745.543168,
+ 'round': 7,
+ 'train_time_sec': 0.0027437210083007812,
+ 'val_accuracy': 69.43,
+ 'val_loss': 1.8814770085796428}
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:11,332 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:11,336 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 75.5,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.8454703049978968,
+ 'pre_val_accuracy': 94.55,
+ 'pre_val_loss': 0.1646271069551919,
+ 'ram_mb': 1788.940288,
+ 'round': 7,
+ 'train_time_sec': 0.0018491744995117188,
+ 'val_accuracy': 78.97,
+ 'val_loss': 1.3390822080290241}
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:29,153 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:29,165 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 77.1,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.6869504194319286,
+ 'pre_val_accuracy': 93.96,
+ 'pre_val_loss': 0.17877043853068997,
+ 'ram_mb': 1752.080384,
+ 'round': 8,
+ 'train_time_sec': 0.002189159393310547,
+ 'val_accuracy': 68.94,
+ 'val_loss': 1.8353519511830276}
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:29,909 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:29,912 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 76.9,
+ 'current_local_steps': 100,
+ 'gradient_norm': 1.0234489135359486,
+ 'pre_val_accuracy': 93.96,
+ 'pre_val_loss': 0.17877043853068997,
+ 'ram_mb': 1787.244544,
+ 'round': 8,
+ 'train_time_sec': 0.0026853084564208984,
+ 'val_accuracy': 79.14,
+ 'val_loss': 1.2112408732153048}
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:47,809 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:48,033 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:48,036 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 76.6,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.42015508746037256,
+ 'pre_val_accuracy': 95.69,
+ 'pre_val_loss': 0.12799839654664516,
+ 'ram_mb': 1752.22784,
+ 'round': 9,
+ 'train_time_sec': 0.003172159194946289,
+ 'val_accuracy': 68.91,
+ 'val_loss': 1.9774963415352402}
+[34m[1mappfl: ✅[0m[2026-03-13 00:40:48,040 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 76.9,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.7301099402845563,
+ 'pre_val_accuracy': 95.69,
+ 'pre_val_loss': 0.12799839654664516,
+ 'ram_mb': 1791.660032,
+ 'round': 9,
+ 'train_time_sec': 0.002869129180908203,
+ 'val_accuracy': 79.17,
+ 'val_loss': 1.044253267680004}
+[34m[1mappfl: ✅[0m[2026-03-13 00:41:07,648 server]: Received UpdateGlobalModel request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:41:07,650 server]: Received meta data from Client2:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 75.3,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.458446276246536,
+ 'pre_val_accuracy': 95.65,
+ 'pre_val_loss': 0.13444560384793078,
+ 'ram_mb': 1754.722304,
+ 'round': 10,
+ 'train_time_sec': 0.0027039051055908203,
+ 'val_accuracy': 69.55,
+ 'val_loss': 1.4789051667899842}
+[34m[1mappfl: ✅[0m[2026-03-13 00:41:08,636 server]: Received UpdateGlobalModel request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:41:08,639 server]: Received meta data from Client1:
+{'bytes_sent': 2330816,
+ 'cpu_pct': 75.2,
+ 'current_local_steps': 100,
+ 'gradient_norm': 0.23736078179275502,
+ 'pre_val_accuracy': 95.65,
+ 'pre_val_loss': 0.13444560384793078,
+ 'ram_mb': 1789.386752,
+ 'round': 10,
+ 'train_time_sec': 0.002008199691772461,
+ 'val_accuracy': 79.77,
+ 'val_loss': 0.9367973172360924}
+[34m[1mappfl: ✅[0m[2026-03-13 00:41:12,029 server]: Received InvokeCustomAction close_connection request from client Client1
+[34m[1mappfl: ✅[0m[2026-03-13 00:41:12,474 server]: Received InvokeCustomAction close_connection request from client Client2
+[34m[1mappfl: ✅[0m[2026-03-13 00:41:12,805 server]: Terminating the server ...
