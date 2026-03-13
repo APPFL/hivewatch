@@ -54,7 +54,7 @@ class FedVizServerAgent(ServerAgent):
         return result
 ```
 
-For richer communication metrics (bytes sent, gradient norm, CPU/RAM), add them to your client trainer's `get_parameters()` return metadata. See the metadata contract below.
+For richer communication metrics (bytes sent, gradient norm, CPU/RAM), add them to your client trainer's and return metadata. See the metadata format below.
 
 ## Metadata
 
