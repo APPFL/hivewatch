@@ -38,7 +38,7 @@ fedviz.finish()
 
 ## APPFL Integration
 
-fedviz works with APPFL by subclassing `ServerAgent` to intercept `global_update()`. No changes to your client code are required for basic metrics. See `examples/appfl_server.py` for the full server script.
+fedviz works with APPFL by subclassing `ServerAgent` to intercept `global_update()`. No changes to the client code are required for basic metrics. See `examples/appfl_server.py` for the full server script.
 
 ```python
 class FedVizServerAgent(ServerAgent):
@@ -56,7 +56,7 @@ class FedVizServerAgent(ServerAgent):
 
 For richer communication metrics (bytes sent, gradient norm, CPU/RAM), add them to your client trainer's `get_parameters()` return metadata. See the metadata contract below.
 
-## Metadata contract
+## Metadata
 
 fedviz defines what keys it understands. Clients fill what they have. Unknown keys are preserved and never dropped.
 
