@@ -1,6 +1,6 @@
 # fedviz
 
-Framework-agnostic monitoring toolkit for federated and distributed ML training. Designed with the same philosophy as Weights & Biases — you call it, it logs. fedviz never touches your framework.
+Framework-agnostic monitoring toolkit for federated and distributed ML training.
 
 
 
