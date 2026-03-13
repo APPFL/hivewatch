@@ -2,9 +2,7 @@
 
 Framework-agnostic monitoring toolkit for federated and distributed ML training. Designed with the same philosophy as Weights & Biases — you call it, it logs. fedviz never touches your framework.
 
-## Why fedviz
 
-Vanilla W&B works great for centralized training but misses the metrics that matter in federated learning — per-client gradient divergence, communication costs, participation rates, staleness in async FL, and non-IID signals. fedviz adds all of these on top of W&B without requiring any changes to how you run your framework.
 
 ## Install
 
@@ -123,22 +121,7 @@ fedviz
 
 fedviz never touches the transport layer or the framework. The user bridges their framework to fedviz the same way they would bridge it to W&B.
 
-## Custom emitters
 
-Implement `.emit()` to send metrics anywhere:
-
-```python
-class MyEmitter:
-    def on_round(self, summary, clients):
-        # send to your own backend
-        pass
-    def on_client_update(self, client):
-        pass
-    def finish(self):
-        pass
-
-fedviz.init(emitters=[MyEmitter()])
-```
 
 ## Project structure
 
