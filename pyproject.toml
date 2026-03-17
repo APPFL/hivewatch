@@ -12,11 +12,10 @@ requires-python = ">=3.8"
 
 [project.optional-dependencies]
 wandb  = ["wandb>=0.16"]
+mlflow = ["mlflow>=2.0"]
 ray    = ["ray>=2.9"]
-all    = ["wandb>=0.16", "ray>=2.9"]
-dev    = ["pytest", "wandb>=0.16"]
-
-
+all    = ["wandb>=0.16", "mlflow>=2.0", "ray>=2.9"]
+dev    = ["pytest", "wandb>=0.16", "mlflow>=2.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

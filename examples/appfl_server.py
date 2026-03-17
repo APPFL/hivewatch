@@ -1,5 +1,6 @@
 import argparse
 import fedviz
+from fedviz.emitters import WandbEmitter, MLflowEmitter
 from appfl.agent import ServerAgent
 from appfl.comm.grpc import GRPCServerCommunicator, serve
 from omegaconf import OmegaConf
@@ -24,17 +25,15 @@ class FedVizServerAgent(ServerAgent):
                     global_loss     = self._last_loss,
                 )
             self._current_round = round_num
-            # Call this at the start of the round, after global model is sent and before client updates come in
             fedviz.round_start(round_num)
-
 
         self._last_accuracy = kwargs.get("val_accuracy", 0.0)
         self._last_loss     = kwargs.get("val_loss",     0.0)
 
+        # Call original — pass everything through untouched
         result = super().global_update(client_id, local_model, *args, **kwargs)
 
-        # Log the client update after local training completes and update is received by the server
-
+        # Log client update after local training completes and update is received
         fedviz.log_client_update(
             client_id      = client_id,
             round          = round_num,
@@ -54,17 +53,20 @@ class FedVizServerAgent(ServerAgent):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str,
-                        default="/home/abhijit/fedviz_clean/resources/configs/mnist/server_fedavg.yaml")
+                        default="/home/abhijit/APPFL/examples/resources/configs/mnist/server_fedavg.yaml")
     args = parser.parse_args()
 
     server_agent_config = OmegaConf.load(args.config)
 
-    #Init fedviz before anything else — this sets up the run and config in the dashboard
-
+    # Init fedviz before anything else
     fedviz.init(
-        wandb_project = "my-fl-project",
-        algorithm     = "FedAvg",
-        config        = dict(server_agent_config.server_configs),
+        algorithm = "FedAvg",
+        config    = dict(server_agent_config.server_configs),
+        emitters  = [
+            WandbEmitter(project="my-fl-project"),
+            # Add more emitters here
+            MLflowEmitter(tracking_uri="http://localhost:5000"),
+        ],
     )
 
     server_agent = FedVizServerAgent(server_agent_config=server_agent_config)
@@ -80,6 +82,7 @@ def main():
     try:
         serve(communicator, **grpc_configs)
     finally:
+        # Log the last round before finishing
         if server_agent._current_round >= 0:
             fedviz.log_round(
                 round           = server_agent._current_round,
