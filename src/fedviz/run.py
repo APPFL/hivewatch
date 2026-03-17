@@ -190,14 +190,15 @@ def init(
     verbose:   bool           = True,
 ) -> FedVizRun:
     """
-    Initialize a fedviz run. Call once before your training loop.
+    Initialize a `fedviz` run. Call once via `with fedviz.init()` before your training loop.
 
     ``init()`` is now fully backend-agnostic. Construct emitter instances
-    explicitly and pass them in. This keeps init() stable as new backends
+    explicitly and pass them in. This keeps `init()` stable as new backends
     are added — it never needs to change.
 
     Examples
     --------
+    
     **Weights & Biases:**
 
     ```python
@@ -229,7 +230,7 @@ def init(
         algorithm = "FedAvg",
         emitters  = [
             WandbEmitter(project="my-fl-project"),
-            MLflowEmitter(tracking_uri="http://localhost:5000"),
+            MLflowEmitter(tracking_uri="http://localhost:5000", experiment="fedviz"),
         ],
     )
     ```

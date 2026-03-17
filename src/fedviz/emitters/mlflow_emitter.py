@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
-
-from ..schema import ClientUpdate, RoundSummary
+from typing import Dict, List, Optional
+from fedviz import ClientUpdate, RoundSummary
 
 logger = logging.getLogger("fedviz.emitters.mlflow")
 
 
 class MLflowEmitter:
     """
-    Emitter that logs fedviz events to MLflow Tracking.
+    Emitter that logs `fedviz` events to MLflow Tracking.
 
-    Usage
-    -----
-        from fedviz.emitters import MLflowEmitter
+    **Usage**:
+
         import fedviz
+        from fedviz.emitters import MLflowEmitter
 
         fedviz.init(
             algorithm = "FedAvg",
@@ -32,7 +31,7 @@ class MLflowEmitter:
         self,
         tracking_uri:   Optional[str] = None,   # None = local ./mlruns
         experiment:     str           = "fedviz",
-        run_name:       Optional[str] = None,    # auto-set to run_id on init
+        run_name:       Optional[str] = None,    # auto-set to run_id on init if None
         tags:           Optional[Dict[str, str]] = None,
         log_system:     bool = True,
         log_per_client: bool = True,
@@ -49,10 +48,9 @@ class MLflowEmitter:
         self.tags           = tags or {}
         self.log_system     = log_system
         self.log_per_client = log_per_client
+        self._run = None
 
-        self._run = None   # mlflow ActiveRun
-
-    # ── Emitter hooks ─────────────────────────────────────────────────────────
+    # ── Called by FedVizRun ───────────────────────────────────────────────────
 
     def on_init(self, run_id: str, algorithm: str, config: dict):
         if self._run is not None:

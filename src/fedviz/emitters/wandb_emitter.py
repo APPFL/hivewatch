@@ -1,10 +1,8 @@
-
 from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional
-
-from ..schema import ClientUpdate, RoundSummary
+from fedviz import ClientUpdate, RoundSummary
 
 logger = logging.getLogger("fedviz.emitters.wandb")
 

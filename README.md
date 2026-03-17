@@ -2,7 +2,9 @@
 
 Framework-agnostic monitoring toolkit for federated and distributed ML training. 
 
-## Install
+## Installation
+
+> 💡  `fedviz` requires `Python >= 3.8`
 
 ```bash
 pip install -e .                     # core only, zero dependencies
@@ -11,8 +13,6 @@ pip install -e ".[mlflow]"           # + MLflow integration
 pip install -e ".[wandb,mlflow]"     # both
 pip install -e ".[all]"              # everything
 ```
-
-Requires Python >= 3.8.
 
 ## Quickstart
 
@@ -30,12 +30,16 @@ for round_num in range(num_rounds):
 
     # your training loop — any framework
     for client_id, metadata in client_results.items():
-        fedviz.log_client_update(client_id=client_id, round=round_num, **metadata)
+        fedviz.log_client_update(
+            client_id=client_id, 
+            round=round_num, 
+            **metadata
+        )
 
     fedviz.log_round(
-        round           = round_num,
-        global_accuracy = agg_accuracy,
-        global_loss     = agg_loss,
+        round=round_num,
+        global_accuracy=agg_accuracy,
+        global_loss=agg_loss,
     )
 
 fedviz.finish()
@@ -43,7 +47,7 @@ fedviz.finish()
 
 ## Emitters
 
-fedviz uses a pluggable emitter system. Construct emitter instances and pass them to `init()`. You can use multiple emitters simultaneously.
+`fedviz` uses a pluggable emitter system. Construct emitter instances and pass them to `init()`. You can use multiple emitters simultaneously.
 
 **Weights & Biases:**
 
@@ -61,10 +65,11 @@ fedviz.init(
 ```python
 from fedviz.emitters import MLflowEmitter
 
-# Local — logs to ./mlruns, view with: mlflow ui
+# Local — logs to ./mlruns, view with command: mlflow ui
 fedviz.init(emitters=[MLflowEmitter(experiment="my-fl-project")])
 
-# Remote server — start with: mlflow server --host 0.0.0.0 --port 5000
+# Remote server — start with command: 
+# mlflow server --host 0.0.0.0 --port 5000
 fedviz.init(emitters=[MLflowEmitter(
     tracking_uri = "http://localhost:5000",
     experiment   = "my-fl-project",
@@ -129,7 +134,7 @@ For richer communication metrics (bytes sent, gradient norm, CPU/RAM), add them 
 
 ## Metadata contract
 
-fedviz defines what keys it understands. Clients fill what they have. Unknown keys are preserved and never dropped.
+`fedviz` defines what keys it understands. Clients fill what they have. Unknown keys are preserved and never dropped.
 
 | Field | Type | Description |
 |---|---|---|
@@ -182,7 +187,7 @@ Same metrics as above. Per-client metrics use dot notation (`client.<id>.accurac
 ```
 FL Clients
   └── return metadata dict
-        │  (gRPC / HTTP / sockets — fedviz never touches the transport)
+        │  (gRPC / HTTP / sockets / others — fedviz never touches the data transport)
         ▼
 FL Server
   └── receives metadata, calls fedviz:
