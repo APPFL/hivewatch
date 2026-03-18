@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import logging
+import threading
 import statistics
 from typing import Dict, List, Optional
 
@@ -46,7 +47,8 @@ class FedVizRun:
         self.config    = config
         self.emitters  = emitters
         self.verbose   = verbose
-
+        
+        self._access_lock = threading.Lock()
         self._round_start_times: Dict[int, float] = {}
         self._pending_clients:   Dict[int, List[ClientUpdate]] = {}
 
@@ -61,18 +63,19 @@ class FedVizRun:
         self._pending_clients[round]   = []
 
     def log_client_update(self, client_id: str, **kwargs):
-        client    = ClientUpdate.from_dict({"client_id": client_id, **kwargs})
-        round_num = client.round
+        with self._access_lock:
+            client    = ClientUpdate.from_dict({"client_id": client_id, **kwargs})
+            round_num = client.round
 
-        if round_num is not None:
-            self._pending_clients.setdefault(round_num, []).append(client)
+            if round_num is not None:
+                self._pending_clients.setdefault(round_num, []).append(client)
 
-        for e in self.emitters:
-            if hasattr(e, "on_client_update"):
-                try:
-                    e.on_client_update(client)
-                except Exception as ex:
-                    logger.warning(f"[fedviz] emitter {type(e).__name__}.on_client_update failed: {ex}")
+            for e in self.emitters:
+                if hasattr(e, "on_client_update"):
+                    try:
+                        e.on_client_update(client)
+                    except Exception as ex:
+                        logger.warning(f"[fedviz] emitter {type(e).__name__}.on_client_update failed: {ex}")
 
     def log_round(
         self,
