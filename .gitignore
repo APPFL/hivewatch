@@ -6,5 +6,7 @@ dist/
 build/
 .env
 wandb/
+mlruns/
 output/
 *.db
+datasets/

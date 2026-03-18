@@ -1,10 +1,10 @@
-import argparse
+
 import fedviz
-from fedviz.emitters import WandbEmitter, MLflowEmitter
+import argparse
+from omegaconf import OmegaConf
 from appfl.agent import ServerAgent
 from appfl.comm.grpc import GRPCServerCommunicator, serve
-from omegaconf import OmegaConf
-
+from fedviz.emitters import WandbEmitter, MLflowEmitter
 
 class FedVizServerAgent(ServerAgent):
     def __init__(self, *args, **kwargs):
@@ -50,47 +50,48 @@ class FedVizServerAgent(ServerAgent):
         return result
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str,
-                        default="/home/abhijit/APPFL/examples/resources/configs/mnist/server_fedavg.yaml")
-    args = parser.parse_args()
+argparser = argparse.ArgumentParser()
+argparser.add_argument(
+    "--config",
+    type=str,
+    default="./resources/configs/server_fedavg.yaml",
+    help="Path to the configuration file.",
+)
+args = argparser.parse_args()
 
-    server_agent_config = OmegaConf.load(args.config)
+server_agent_config = OmegaConf.load(args.config)
 
-    # Init fedviz before anything else
-    fedviz.init(
-        algorithm = "FedAvg",
-        config    = dict(server_agent_config.server_configs),
-        emitters  = [
-            WandbEmitter(project="my-fl-project"),
-            # Add more emitters here
-            MLflowEmitter(tracking_uri="http://localhost:5000"),
-        ],
-    )
+fedviz.init(
+    algorithm = "FedAvg",
+    config    = dict(server_agent_config.server_configs),
+    emitters  = [
+        WandbEmitter(project="my-fl-project-wandb"),
+        MLflowEmitter(
+            experiment="my-fl-project-mlflow", 
+            mlflow_system_metrics=True, 
+            run_name="fedavg-run-1",
+            system_metrics_sampling_interval=5
+        ),
+    ],
+)
 
-    server_agent = FedVizServerAgent(server_agent_config=server_agent_config)
+server_agent = FedVizServerAgent(server_agent_config=server_agent_config)
 
-    grpc_configs = server_agent_config.server_configs.comm_configs.grpc_configs
+communicator = GRPCServerCommunicator(
+    server_agent,
+    logger=server_agent.logger,
+    **server_agent_config.server_configs.comm_configs.grpc_configs,
+)
 
-    communicator = GRPCServerCommunicator(
-        server_agent,
-        logger=server_agent.logger,
-        **grpc_configs,
-    )
+try:
+    serve(communicator, **server_agent_config.server_configs.comm_configs.grpc_configs)
+finally:
+    # Log the last round before finishing
+    if server_agent._current_round >= 0:
+        fedviz.log_round(
+            round           = server_agent._current_round,
+            global_accuracy = server_agent._last_accuracy,
+            global_loss     = server_agent._last_loss,
+        )
+    fedviz.finish()
 
-    try:
-        serve(communicator, **grpc_configs)
-    finally:
-        # Log the last round before finishing
-        if server_agent._current_round >= 0:
-            fedviz.log_round(
-                round           = server_agent._current_round,
-                global_accuracy = server_agent._last_accuracy,
-                global_loss     = server_agent._last_loss,
-            )
-        fedviz.finish()
-
-
-if __name__ == "__main__":
-    main()

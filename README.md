@@ -68,11 +68,19 @@ from fedviz.emitters import MLflowEmitter
 # Local — logs to ./mlruns, view with command: mlflow ui
 fedviz.init(emitters=[MLflowEmitter(experiment="my-fl-project")])
 
-# Remote server — start with command: 
+# Remote server — start with command:
 # mlflow server --host 0.0.0.0 --port 5000
 fedviz.init(emitters=[MLflowEmitter(
     tracking_uri = "http://localhost:5000",
     experiment   = "my-fl-project",
+)])
+
+# Enable MLflow's built-in server-side system metrics (CPU, RAM, GPU, disk, network)
+# sampled in the background and visible in the MLflow UI "System Metrics" tab
+fedviz.init(emitters=[MLflowEmitter(
+    experiment             = "my-fl-project",
+    mlflow_system_metrics  = True,
+    system_metrics_sampling_interval = 5,  # seconds; default is 10
 )])
 ```
 
