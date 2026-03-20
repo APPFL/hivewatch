@@ -9,5 +9,8 @@ wandb/
 mlruns/
 runs/
 output/
+mlflow_local/
+mlruns/
+runs/
 *.db
 datasets/
