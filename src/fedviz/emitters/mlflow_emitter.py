@@ -4,17 +4,17 @@ import os
 import time
 import logging
 from typing import Dict, List, Optional
-from fedviz import ClientUpdate, RoundSummary
+from ..schema import ClientUpdate, RoundSummary
 
 logger = logging.getLogger("fedviz.emitters.mlflow")
 
 
 class MLflowEmitter:
     """
-    Emitter that logs `fedviz` events to MLflow Tracking.
+    Emitter that logs fedviz events to MLflow Tracking.
 
-    **Usage**:
-
+    Usage
+    -----
         import fedviz
         from fedviz.emitters import MLflowEmitter
 
@@ -23,44 +23,90 @@ class MLflowEmitter:
             emitters  = [
                 MLflowEmitter(
                     tracking_uri = "http://localhost:5000",
-                    experiment = "my-fl-experiment",
+                    experiment   = "my-fl-experiment",
                     mlflow_system_metrics = True,  # enable MLflow native server-side system metrics
                     system_metrics_sampling_interval = 10,  # sample every 10 s
                 )
             ],
         )
+
+    Adopting an existing run
+    ------------------------
+        # Auto-adopt: if your codebase already called mlflow.start_run(),
+        # fedviz will use that run automatically — no duplicate run created.
+        mlflow.start_run(experiment_id="123")
+        fedviz.init(emitters=[MLflowEmitter(tracking_uri="http://localhost:5000")])
+
+        # Resume a specific past run by its MLflow run ID:
+        fedviz.init(emitters=[MLflowEmitter(
+            tracking_uri  = "http://localhost:5000",
+            resume_run_id = "abc123def456",
+        )])
+
+    Starting the MLflow server
+    --------------------------
+        # Default storage (./mlruns)
+        mlflow server --host 0.0.0.0 --port 5000
+
+        # Custom storage directory
+        mlflow server \\
+            --host 0.0.0.0 --port 5000 \\
+            --backend-store-uri ./my_mlflow_dir \\
+            --default-artifact-root ./my_mlflow_dir/artifacts
     """
 
     def __init__(
         self,
-        tracking_uri: Optional[str] = None, # None = local ./mlruns
-        experiment: str = "fedviz",
-        run_name: Optional[str] = None, # auto-set to run_id on init if None
-        tags: Optional[Dict[str, str]] = None,
-        log_system: bool = True,
-        log_per_client: bool = True,
-        mlflow_system_metrics: bool = False, # enable MLflow native server-side system metrics
-        system_metrics_sampling_interval: Optional[int] = None,  # seconds; None = MLflow default
+        tracking_uri:                     Optional[str]           = None,  # None = local ./mlruns
+        experiment:                       str                      = "fedviz",
+        run_name:                         Optional[str]            = None, # auto-set to run_id on init if None
+        resume_run_id:                    Optional[str]            = None,
+        tags:                             Optional[Dict[str, str]] = None,
+        log_system:                       bool                     = True,
+        log_per_client:                   bool                     = True,
+        log_geo:                          bool                     = False,
+        mlflow_system_metrics:            bool                     = False, # enable MLflow native server-side system metrics
+        system_metrics_sampling_interval: Optional[int]            = None, # seconds; None = MLflow default
     ):
+        """
+        tracking_uri:   MLflow server URI. None = local ./mlruns.
+        experiment:     Experiment name — created automatically if not found.
+        run_name:       Display name for this run. Defaults to fedviz run_id.
+        resume_run_id:  Resume a specific past run by its MLflow run ID.
+                        If None and a run is already active in the process,
+                        fedviz adopts it automatically.
+        tags:           Dict of string tags e.g. {"dataset": "mnist"}.
+        log_system:     Log per-client CPU/GPU/RAM under sys.<id>.*.
+        log_per_client: Log per-client training metrics under client.<id>.*.
+        log_geo:        Log per-client geo (lat/lng/city/country) as MLflow tags.
+        mlflow_system_metrics:
+                        Enable MLflow native server-side system metrics logging.
+        system_metrics_sampling_interval:
+                        Sampling interval in seconds for MLflow system metrics.
+                        None = MLflow default (every 10s).
+        """
         try:
             import mlflow
             self._mlflow = mlflow
         except ImportError:
             raise ImportError("mlflow not installed. Run: pip install mlflow")
 
-        self.tracking_uri   = tracking_uri
-        self.experiment     = experiment
-        self.run_name       = run_name
-        self.tags           = tags or {}
+        self.tracking_uri                     = tracking_uri
+        self.experiment                       = experiment
+        self.run_name                         = run_name
+        self.resume_run_id                    = resume_run_id
+        self.tags                             = tags or {}
         self.log_system                       = log_system
         self.log_per_client                   = log_per_client
+        self.log_geo                          = log_geo
         self.mlflow_system_metrics            = mlflow_system_metrics
         self.system_metrics_sampling_interval = system_metrics_sampling_interval
-        self._run = None
-        self._run_id: Optional[str] = None
-        self._client = None   # MlflowClient — set in on_init, used for thread-safe logging
 
-    # ── Called by FedVizRun ───────────────────────────────────────────────────
+        self._run    = None
+        self._run_id: Optional[str] = None
+        self._client = None   # MlflowClient — used for thread-safe logging
+
+    # ── Emitter hooks ─────────────────────────────────────────────────────────
 
     def on_init(self, run_id: str, algorithm: str, config: dict):
         if self._run is not None:
@@ -76,12 +122,29 @@ class MLflowEmitter:
                     self.system_metrics_sampling_interval
                 )
 
-        self._mlflow.set_experiment(self.experiment)
+        # Priority 1: resume a specific past run by MLflow run ID
+        if self.resume_run_id is not None:
+            self._run = self._mlflow.start_run(run_id=self.resume_run_id)
+            self._run_id = self._run.info.run_id
+            self._client = self._mlflow.tracking.MlflowClient()
+            logger.info(f"[fedviz/mlflow] resumed run: {self.resume_run_id}")
+            return
 
+        # Priority 2: adopt whatever run is already active in the process
+        active = self._mlflow.active_run()
+        if active is not None:
+            self._run    = active
+            self._run_id = active.info.run_id
+            self._client = self._mlflow.tracking.MlflowClient()
+            logger.info(f"[fedviz/mlflow] adopted existing run: {self._run_id}")
+            return
+
+        # Priority 3: start a fresh run
+        self._mlflow.set_experiment(self.experiment)
         self._run = self._mlflow.start_run(
             run_name = self.run_name or run_id,
             tags     = {
-                "fedviz/run_id":   run_id,
+                "fedviz/run_id":    run_id,
                 "fedviz/algorithm": algorithm,
                 **self.tags,
             },
@@ -90,7 +153,6 @@ class MLflowEmitter:
         self._run_id = self._run.info.run_id
         self._client = self._mlflow.tracking.MlflowClient()
 
-        # Log hyperparameters as MLflow params (logged once, not per step)
         flat_config = self._flatten(config)
         if flat_config:
             self._mlflow.log_params(flat_config)
@@ -98,7 +160,7 @@ class MLflowEmitter:
         logger.info(f"[fedviz/mlflow] run started: {self._run_id}")
 
     def on_round(self, summary: RoundSummary, clients: List[ClientUpdate]):
-        step = summary.round
+        step    = summary.round
         metrics: Dict[str, float] = {}
 
         # Global
@@ -137,11 +199,12 @@ class MLflowEmitter:
                 metrics.update(self._client_metrics(c))
             if self.log_system:
                 metrics.update(self._sys_metrics(c))
+            if self.log_geo:
+                self._log_geo_tags(c)
 
         self._log_metrics(metrics, step=step)
 
     def on_client_update(self, client: ClientUpdate):
-        """Async FL: log a single client update immediately."""
         if client.round is None:
             return
         metrics: Dict[str, float] = {}
@@ -149,6 +212,8 @@ class MLflowEmitter:
             metrics.update(self._client_metrics(client))
         if self.log_system:
             metrics.update(self._sys_metrics(client))
+        if self.log_geo:
+            self._log_geo_tags(client)
         if metrics:
             self._log_metrics(metrics, step=client.round)
 
@@ -163,7 +228,10 @@ class MLflowEmitter:
     def on_checkpoint(self, round: int, path: str, metadata: dict):
         """Log model checkpoint as an MLflow artifact."""
         try:
-            self._client.log_artifact(self._run_id, path, artifact_path=f"checkpoints/round_{round}")
+            self._client.log_artifact(
+                self._run_id, path,
+                artifact_path=f"checkpoints/round_{round}"
+            )
             self._log_metrics({"event/checkpoint": 1}, step=round)
             logger.info(f"[fedviz/mlflow] checkpoint logged: {path}")
         except Exception as e:
@@ -176,13 +244,13 @@ class MLflowEmitter:
             self._run_id = None
             self._client = None
 
-    # ── Thread-safe logging helpers (use MlflowClient, not fluent API) ────────
-    # The fluent API (mlflow.log_metrics etc.) resolves the active run from a
-    # thread-local stack. If a new thread is spawned (e.g. a grpc worker thread) 
-    # and the fluent API is called there, MLflow will auto-create a new run in 
-    # that thread instead of using the existing run created in the main thread.
-    # By contrast, MlflowClient with an explicit run_id works across threads and 
-    # always targets the correct run.
+    # ── Thread-safe logging ───────────────────────────────────────────────────
+    # APPFL's gRPC server calls global_update() from worker threads.
+    # The fluent MLflow API (mlflow.log_metrics) resolves the active run from a
+    # thread-local stack — it creates a new run in each worker thread instead of
+    # logging to the existing one created in the main thread.
+    # MlflowClient with an explicit run_id is thread-safe and always targets
+    # the correct run regardless of which thread calls it.
 
     def _log_metrics(self, metrics: Dict[str, float], step: int) -> None:
         if not metrics or self._run_id is None:
@@ -202,13 +270,12 @@ class MLflowEmitter:
         self._client.set_tag(self._run_id, key, value)
 
     # ── Metric builders ───────────────────────────────────────────────────────
-
+    
     # MLflow key constraint: no "/" in metric names for per-client metrics
     # (MLflow UI groups by "." separators in the metric name)
     # Round-level metrics use "/" which MLflow handles fine.
-
+    
     def _client_metrics(self, c: ClientUpdate) -> Dict[str, float]:
-        # Use dot notation for per-client: client.<id>.<metric>
         p = f"client.{c.client_id}."
         d: Dict[str, float] = {}
 
@@ -246,6 +313,14 @@ class MLflowEmitter:
         s("gpu_util_pct", c.gpu_util_pct)
         s("gpu_vram_mb",  c.gpu_vram_mb)
         return d
+
+    def _log_geo_tags(self, c: ClientUpdate) -> None:
+        """Log client geo as MLflow tags for run filtering and search."""
+        p = f"geo.{c.client_id}."
+        if c.lat     is not None: self._set_tag(p + "lat",     str(c.lat))
+        if c.lng     is not None: self._set_tag(p + "lng",     str(c.lng))
+        if c.city    is not None: self._set_tag(p + "city",    c.city)
+        if c.country is not None: self._set_tag(p + "country", c.country)
 
     @staticmethod
     def _flatten(d: dict, prefix: str = "") -> Dict[str, str]:

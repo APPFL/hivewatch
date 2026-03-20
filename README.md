@@ -61,15 +61,13 @@ fedviz.init(
 ```
 
 **MLflow:**
-
 ```python
 from fedviz.emitters import MLflowEmitter
 
-# Local — logs to ./mlruns, view with command: mlflow ui
+# Local — logs to ./mlruns (MLflow default)
 fedviz.init(emitters=[MLflowEmitter(experiment="my-fl-project")])
 
-# Remote server — start with command:
-# mlflow server --host 0.0.0.0 --port 5000
+# Remote server — start with: mlflow server --host 0.0.0.0 --port 5000
 fedviz.init(emitters=[MLflowEmitter(
     tracking_uri = "http://localhost:5000",
     experiment   = "my-fl-project",
@@ -82,7 +80,22 @@ fedviz.init(emitters=[MLflowEmitter(
     mlflow_system_metrics  = True,
     system_metrics_sampling_interval = 5,  # seconds; default is 10
 )])
+
 ```
+
+**Starting the MLflow server:**
+```bash
+# Default — stores data in ./mlruns
+mlflow server --host 0.0.0.0 --port 5000
+
+# Custom directory — stores data in ./my_custom_dir
+mlflow server \
+  --host 0.0.0.0 \
+  --port 5000 \
+  --backend-store-uri ./my_custom_dir \
+  --default-artifact-root ./my_custom_dir/artifacts
+```
+Then open the dashboard at `http://localhost:5000`.
 
 **Both simultaneously:**
 

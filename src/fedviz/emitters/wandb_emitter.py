@@ -10,6 +10,31 @@ _STATUS_INT = {"active": 0, "idle": 1, "dropped": 2, "failed": 3}
 
 
 class WandbEmitter:
+    """
+    Emitter that logs fedviz events to Weights & Biases.
+
+    Usage
+    -----
+        import fedviz
+        from fedviz.emitters import WandbEmitter
+
+        fedviz.init(
+            algorithm = "FedAvg",
+            emitters  = [
+                WandbEmitter(project="my-fl-project"),
+            ],
+        )
+
+    Adopting an existing run
+    ------------------------
+        # If your codebase already called wandb.init(), fedviz adopts
+        # that run automatically — no duplicate run created.
+        wandb.init(project="my-project")
+        fedviz.init(emitters=[WandbEmitter()])
+
+
+    """
+
     def __init__(
         self,
         project:        str  = "fedviz",
@@ -20,9 +45,21 @@ class WandbEmitter:
         config:         Optional[Dict[str, Any]] = None,
         log_system:     bool = True,
         log_per_client: bool = True,
-        log_geo:        bool = False,  
+        log_geo:        bool = False,
         mode:           str  = "online",
     ):
+        """
+        project:        W&B project name.
+        entity:         W&B username or team. Defaults to the logged-in account.
+        group:          Groups runs in the W&B UI — defaults to algorithm name.
+        job_type:       Run label for filtering in the W&B dashboard.
+        tags:           List of string tags e.g. ["mnist", "iid"].
+        config:         Extra hyperparameter dict merged into the run config.
+        log_system:     Log per-client CPU/GPU/RAM metrics under sys/<id>/*.
+        log_per_client: Log per-client training metrics under client/<id>/*.
+        log_geo:        Accumulate client geo into a wandb.Table map. Opt-in (PII).
+        mode:           "online" | "offline" | "disabled".
+        """
         try:
             import wandb
             self._w = wandb
@@ -44,7 +81,7 @@ class WandbEmitter:
         self._metrics_defined = False
         self._geo_table       = None
 
-    # ── Called by FedVizRun ───────────────────────────────────────────────────
+    # ── Emitter hooks ─────────────────────────────────────────────────────────
 
     def on_init(self, run_id: str, algorithm: str, config: dict):
         if self._run is not None:
@@ -135,6 +172,7 @@ class WandbEmitter:
         )
 
     def on_checkpoint(self, round: int, path: str, metadata: dict):
+        """Log model checkpoint as a versioned W&B Artifact."""
         artifact = self._w.Artifact(
             name=f"model-round-{round}", type="model", metadata=metadata
         )
@@ -186,6 +224,7 @@ class WandbEmitter:
         return d
 
     def _record_geo(self, c: ClientUpdate, round_num: int):
+        """Accumulate client geo into a wandb.Table for map rendering."""
         if self._geo_table is None:
             self._geo_table = self._w.Table(
                 columns=["round", "client_id", "lat", "lng",
@@ -198,6 +237,7 @@ class WandbEmitter:
         )
 
     def _define_metrics(self):
+        """Register all metric namespaces to use round as x-axis."""
         if self._metrics_defined:
             return
         self._metrics_defined = True

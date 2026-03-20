@@ -12,11 +12,11 @@ class FedVizServerAgent(ServerAgent):
         self._current_round = -1
         self._last_accuracy = 0.0
         self._last_loss     = 0.0
+       
 
     def global_update(self, client_id, local_model, *args, **kwargs):
         round_num = kwargs.get("round", 0)
 
-        # Round boundary — new round started
         if round_num != self._current_round:
             if self._current_round >= 0:
                 fedviz.log_round(
@@ -30,10 +30,8 @@ class FedVizServerAgent(ServerAgent):
         self._last_accuracy = kwargs.get("val_accuracy", 0.0)
         self._last_loss     = kwargs.get("val_loss",     0.0)
 
-        # Call original — pass everything through untouched
         result = super().global_update(client_id, local_model, *args, **kwargs)
 
-        # Log client update after local training completes and update is received
         fedviz.log_client_update(
             client_id      = client_id,
             round          = round_num,
@@ -67,6 +65,7 @@ fedviz.init(
     emitters  = [
         WandbEmitter(project="my-fl-project-wandb"),
         MLflowEmitter(
+            tracking_uri="http://localhost:5000",
             experiment="my-fl-project-mlflow", 
             mlflow_system_metrics=True, 
             run_name="fedavg-run-1",
