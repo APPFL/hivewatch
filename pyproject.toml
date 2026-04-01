@@ -14,7 +14,10 @@ requires-python = ">=3.8"
 wandb  = ["wandb>=0.16"]
 mlflow = ["mlflow>=2.0"]
 all    = ["wandb>=0.16", "mlflow>=2.0"]
-dev    = ["pytest", "wandb>=0.16", "mlflow>=2.0"]
+dev    = ["coverage", "pytest", "wandb>=0.16", "mlflow>=2.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
