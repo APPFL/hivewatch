@@ -7,7 +7,9 @@ from typing import Dict, List, Optional
 from ..schema import ClientUpdate, RoundSummary
 
 logger = logging.getLogger("fedviz.emitters.mlflow")
-
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    logger.addHandler(logging.StreamHandler())
 
 class MLflowEmitter:
     """
@@ -157,7 +159,8 @@ class MLflowEmitter:
         if flat_config:
             self._mlflow.log_params(flat_config)
 
-        logger.info(f"[fedviz/mlflow] run started: {self._run_id}")
+        if self.tracking_uri:
+            logger.info(f"[fedviz/mlflow] you can view this run at: {self.tracking_uri}/#/experiments/{self.experiment}/runs/{self._run_id}")
 
     def on_round(self, summary: RoundSummary, clients: List[ClientUpdate]):
         step    = summary.round
