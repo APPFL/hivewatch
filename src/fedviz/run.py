@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import logging
+import threading
 import statistics
 from typing import Dict, List, Optional
 
@@ -9,6 +10,7 @@ from . import _state
 from .schema import ClientUpdate, RoundSummary, new_run_id
 
 logger = logging.getLogger("fedviz")
+
 
 class FedVizRun:
     """
@@ -25,21 +27,11 @@ class FedVizRun:
     Can be used as a context manager — ``finish()`` is called automatically
     on exit::
 
-        with fedviz.init(wandb_project="my-project") as run:
+        with fedviz.init(...) as run:
             for round in range(num_rounds):
                 run.round_start(round)
-                # ... training ...
                 run.log_client_update(client_id, **metadata)
-                run.log_round(round, accuracy, loss)
-
-    Args:
-        `run_id`:    Unique identifier for this run (auto-generated if not provided via ``init()``).
-        `algorithm`: FL algorithm name, e.g. ``"FedAvg"``, ``"FedProx"``.
-        `config`:    Hyperparameter dict logged to backends on init.
-        `emitters`:  List of emitter instances (e.g. ``WandbEmitter``). Each
-                   is called via duck-typed hooks; a failing emitter never
-                   crashes the training loop.
-        `verbose`:   If True, prints round summaries and finish confirmation to stdout.
+                run.log_round(round, global_accuracy=acc, global_loss=loss)
     """
 
     def __init__(
@@ -55,7 +47,8 @@ class FedVizRun:
         self.config    = config
         self.emitters  = emitters
         self.verbose   = verbose
-
+        
+        self._access_lock = threading.Lock()
         self._round_start_times: Dict[int, float] = {}
         self._pending_clients:   Dict[int, List[ClientUpdate]] = {}
 
@@ -66,34 +59,30 @@ class FedVizRun:
     # ── Public API ────────────────────────────────────────────────────────────
 
     def round_start(self, round: int):
-        """
-        Call at the start of each round.
-        Optional but enables accurate round wall-time tracking.
-        """
         self._round_start_times[round] = time.time()
         self._pending_clients[round]   = []
 
     def log_client_update(self, client_id: str, **kwargs):
-        """Log a single client's update. Call once per client per round."""
-        client = ClientUpdate.from_dict({"client_id": client_id, **kwargs})
-        round_num = client.round
+        with self._access_lock:
+            client    = ClientUpdate.from_dict({"client_id": client_id, **kwargs})
+            round_num = client.round
 
-        if round_num is not None:
-            self._pending_clients.setdefault(round_num, []).append(client)
+            if round_num is not None:
+                self._pending_clients.setdefault(round_num, []).append(client)
 
-        for e in self.emitters:
-            if hasattr(e, "on_client_update"):
-                try:
-                    e.on_client_update(client)
-                except Exception as ex:
-                    logger.warning(f"[fedviz] emitter {type(e).__name__}.on_client_update failed: {ex}")
+            for e in self.emitters:
+                if hasattr(e, "on_client_update"):
+                    try:
+                        e.on_client_update(client)
+                    except Exception as ex:
+                        logger.warning(f"[fedviz] emitter {type(e).__name__}.on_client_update failed: {ex}")
 
     def log_round(
         self,
-        round:           int,
+        round:                int,
         *,
-        global_accuracy: Optional[float] = None,
-        global_loss:     Optional[float] = None,
+        global_accuracy:      Optional[float] = None,
+        global_loss:          Optional[float] = None,
         num_selected:         Optional[int]   = None,
         num_stragglers:       int             = 0,
         num_failures:         int             = 0,
@@ -103,15 +92,6 @@ class FedVizRun:
         aggregation_time_sec: Optional[float] = None,
         algorithm_metadata:   Optional[dict]  = None,
     ):
-        """
-        Log the round summary after aggregation completes.
-
-        fedviz auto-computes:
-          - round wall time (if round_start() was called)
-          - total_bytes_up/down from accumulated client updates (if not provided)
-          - gradient_divergence from per-client gradient norms (if not provided)
-          - num_selected / num_completed from accumulated client updates
-        """
         clients = self._pending_clients.pop(round, [])
 
         if total_bytes_up == 0:
@@ -158,15 +138,12 @@ class FedVizRun:
                     logger.warning(f"[fedviz] emitter {type(e).__name__}.on_round failed: {ex}")
 
         if self.verbose:
-            strag = f"  stragglers={num_stragglers}" if num_stragglers else ""
-            print(
-                f"[fedviz] round {round:>3}  "
-                f"acc={global_accuracy:.4f}  loss={global_loss:.4f}  "
-                f"clients={len(clients)}{strag}"
-            )
+            acc_str  = f"{global_accuracy:.4f}" if global_accuracy is not None else "n/a"
+            loss_str = f"{global_loss:.4f}"     if global_loss     is not None else "n/a"
+            strag    = f"  stragglers={num_stragglers}" if num_stragglers else ""
+            print(f"[fedviz] round {round:>3}  acc={acc_str}  loss={loss_str}  clients={len(clients)}{strag}")
 
     def log_dropout(self, round: int, client_id: str, reason: Optional[str] = None):
-        """Log a client dropout. Fires a wandb WARN alert if wandb is attached."""
         for e in self.emitters:
             if hasattr(e, "on_dropout"):
                 try:
@@ -175,7 +152,6 @@ class FedVizRun:
                     logger.warning(f"[fedviz] emitter on_dropout failed: {ex}")
 
     def log_comm_failure(self, round: int, client_id: str, reason: Optional[str] = None):
-        """Log a communication failure. Fires a wandb ERROR alert if wandb is attached."""
         for e in self.emitters:
             if hasattr(e, "on_comm_failure"):
                 try:
@@ -184,10 +160,6 @@ class FedVizRun:
                     logger.warning(f"[fedviz] emitter on_comm_failure failed: {ex}")
 
     def log_checkpoint(self, round: int, path: str, **metadata):
-        """
-        Log a model checkpoint.
-        If wandb is attached, uploads the file as a versioned Artifact.
-        """
         for e in self.emitters:
             if hasattr(e, "on_checkpoint"):
                 try:
@@ -213,89 +185,81 @@ class FedVizRun:
 
 
 def init(
-    wandb_project:        Optional[str]       = None,
-    wandb_entity:         Optional[str]       = None,
-    wandb_group:          Optional[str]       = None,
-    wandb_tags:           Optional[List[str]] = None,
-    wandb_mode:           str                 = "online",
-    wandb_log_system:     bool                = True,
-    wandb_log_per_client: bool                = True,
-    wandb_log_geo:        bool                = False,
-    run_id:               Optional[str]       = None,
-    algorithm:            str                 = "FedAvg",
-    config:               Optional[dict]      = None,
-    emitters:             Optional[list]      = None,
-    verbose:              bool                = True,
+    *,
+    run_id:    Optional[str]  = None,
+    algorithm: str            = "FedAvg",
+    config:    Optional[dict] = None,
+    emitters:  Optional[list] = None,
+    verbose:   bool           = True,
 ) -> FedVizRun:
     """
-    Initialize a fedviz run. Call once before your training loop.
+    Initialize a `fedviz` run. Call once via `with fedviz.init()` before your training loop.
+
+    ``init()`` is now fully backend-agnostic. Construct emitter instances
+    explicitly and pass them in. This keeps `init()` stable as new backends
+    are added — it never needs to change.
 
     Examples
+    --------
     
-    ────────
-    
-    **Weights & Biases**
-    
+    **Weights & Biases:**
+
     ```python
-    fedviz.init(wandb_project="my-fl-project", algorithm="FedProx")
+    from fedviz.emitters import WandbEmitter
+
+    fedviz.init(
+        algorithm = "FedAvg",
+        emitters  = [WandbEmitter(project="my-fl-project")],
+    )
     ```
 
-    **Your own `wandb.init()` already called:**
-    
+    **MLflow:**
+
     ```python
+    from fedviz.emitters import MLflowEmitter
+
+    fedviz.init(
+        algorithm = "FedAvg",
+        emitters  = [MLflowEmitter(tracking_uri="http://localhost:5000", experiment="fedviz")],
+    )
+    ```
+
+    **Both at once:**
+
+    ```python
+    from fedviz.emitters import WandbEmitter, MLflowEmitter
+
+    fedviz.init(
+        algorithm = "FedAvg",
+        emitters  = [
+            WandbEmitter(project="my-fl-project"),
+            MLflowEmitter(tracking_uri="http://localhost:5000", experiment="fedviz"),
+        ],
+    )
+    ```
+
+    **Auto-adopt an existing wandb run:**
+
+    ```python
+    import wandb
+    from fedviz.emitters import WandbEmitter
+
     wandb.init(project="my-project")
-    fedviz.init()    # auto-adopts the active run
-    ```
-
-    **Custom emitter (MLflow, TensorBoard, …):**
-    
-    ```python
-    fedviz.init(emitters=[MyMLflowEmitter()])
-    ```
-
-    **Multiple emitters:**
-    
-    ```python
-    fedviz.init(wandb_project="my-project", emitters=[MyMLflowEmitter()])
+    fedviz.init(emitters=[WandbEmitter()])  # adopts the active run
     ```
     """
-    all_emitters = list(emitters or [])
-
-    if wandb_project is not None or _wandb_already_running():
-        try:
-            from .emitters.wandb_emitter import WandbEmitter
-            import wandb as _w
-            we = WandbEmitter(
-                project        = wandb_project or (_w.run.project if _w.run else "fedviz"),
-                entity         = wandb_entity,
-                group          = wandb_group,
-                tags           = wandb_tags or [],
-                log_system     = wandb_log_system,
-                log_per_client = wandb_log_per_client,
-                log_geo        = wandb_log_geo,
-                mode           = wandb_mode,
-                config         = config or {},
-            )
-            all_emitters.insert(0, we)
-            if verbose:
-                print(f"[fedviz] wandb → project={we.project}")
-        except ImportError:
-            if wandb_project is not None:
-                logger.warning("[fedviz] wandb not installed. Run: pip install wandb")
-
     _state._run = FedVizRun(
         run_id    = run_id or new_run_id(),
         algorithm = algorithm,
         config    = config or {},
-        emitters  = all_emitters,
+        emitters  = list(emitters or []),
         verbose   = verbose,
     )
+
+    if verbose and _state._run.emitters:
+        names = ", ".join(type(e).__name__ for e in _state._run.emitters)
+        print(f"[fedviz] run={_state._run.run_id}  algorithm={algorithm}  emitters=[{names}]")
+    elif verbose:
+        print(f"[fedviz] run={_state._run.run_id}  algorithm={algorithm}  no emitters")
+
     return _state._run
-
-
-def _wandb_already_running() -> bool:
-    try:
-        import wandb
-        return wandb.run is not None
-    except ImportError:
-        return False
