@@ -108,6 +108,8 @@ def server_fn(context: Context):
                 tracking_uri = "http://localhost:5000",
                 experiment   = "my-fl-project-mlflow",
                 log_geo      = True,
+                mlflow_system_metrics  = True,
+                system_metrics_sampling_interval = 5,
             ),
         ],
     )

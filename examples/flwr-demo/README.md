@@ -8,7 +8,13 @@ pip install -e .
 
 ## Run with the Simulation Engine
 
-In the `demo` directory, use `flwr run` to run a local simulation:
+Start the mlflow server first:
+
+```bash
+mlflow server --host 0.0.0.0 --port 5000
+```
+
+In the `flwr-demo` directory, use `flwr run` to run a local simulation:
 
 ```bash
 flwr run .
