@@ -1,6 +1,6 @@
 # `APPFL` + `fedviz` Example
 
-This example runs a 2-client federated learning job using [APPFL](https://github.com/APPFL/APPFL) with FedAvg over gRPC, while logging training metrics to W&B and MLflow via **fedviz**.
+This example runs a 2-client federated learning job using [APPFL](https://github.com/APPFL/APPFL) with FedAvg over gRPC, while logging training metrics and map metadata via **fedviz**.
 
 ## What the example does
 
@@ -13,7 +13,7 @@ Make sure you have `appfl` and `fedviz` installed, along with the required depen
 
 ## Running the example
 
-The server must be started before the clients. Open **three terminals**, all from the `examples/appfl/` directory.
+The server must be started before the clients. Open **four terminals**, all from the `examples/appfl/` directory.
 
 **Terminal 1 — server**
 ```bash
@@ -22,12 +22,17 @@ python run_server.py
 python run_server.py --config ./resources/configs/server_fedavg.yaml
 ```
 
-**Terminal 2 — client 1**
+**Terminal 2 — map**
+```bash
+hivewatch map run --runs-dir runs --port 7070
+```
+
+**Terminal 3 — client 1**
 ```bash
 python run_client.py --config ./resources/configs/client_1.yaml
 ```
 
-**Terminal 3 — client 2**
+**Terminal 4 — client 2**
 ```bash
 python run_client.py --config ./resources/configs/client_2.yaml
 ```
@@ -36,7 +41,7 @@ Training finishes automatically after 10 global rounds. Results are written to `
 
 ## Monitoring backends
 
-The server initializes two emitters in `run_server.py`:
+The server initializes three emitters in `run_server.py`:
 
 ```python
 fedviz.init(
@@ -44,6 +49,7 @@ fedviz.init(
     config    = dict(server_agent_config.server_configs),
     emitters  = [
         WandbEmitter(project="my-fl-project-wandb"),
+        SSEEmitter(port=7070, serve_map=False),
         MLflowEmitter(experiment="my-fl-project-mlflow"),
     ],
 )
@@ -51,5 +57,8 @@ fedviz.init(
 
 - **W&B**: Metrics appear in the `my-fl-project-wandb` project. Requires `WANDB_API_KEY` to be set, or run `wandb login` first.
 - **MLflow**: Runs are recorded in the `my-fl-project-mlflow` experiment. The tracking URI defaults to `./mlruns`; override with `MLFLOW_TRACKING_URI`.
+- **Map metadata + local viewer**: `SSEEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
 
 To use only one backend, remove the unwanted emitter from the list.
+
+For an Appflx-style deployment, the map metadata file is the preferred interchange format: save it locally during training, move it to shared storage such as S3, and have a separate web tier reload it later with the same viewer.
