@@ -49,6 +49,61 @@ fedviz.finish()
 
 `fedviz` uses a pluggable emitter system. Construct emitter instances and pass them to `init()`. You can use multiple emitters simultaneously.
 
+**Local map / deferred map metadata:**
+
+```python
+from fedviz.emitters import SSEEmitter
+
+fedviz.init(
+    algorithm = "FedAvg",
+    emitters  = [SSEEmitter(port=7070, serve_map=False)],
+)
+```
+
+`SSEEmitter` now persists both:
+- `runs/<run_id>.jsonl` for full event history / replay
+- `runs/<run_id>.map.json` for map-ready metadata that can be reloaded later without replaying the raw log
+
+Serve the dashboard separately:
+
+```bash
+hivewatch map run --runs-dir runs --port 7070
+```
+
+Common `hivewatch map run` arguments:
+
+```bash
+hivewatch map run \
+  --host 0.0.0.0 \
+  --port 7070 \
+  --runs-dir runs \
+  --run-id run-abc123 \
+  --map-path examples/fedviz_map.html \
+  --poll-interval 1.0
+```
+
+- `--host`: host/interface to bind the dashboard server to
+- `--port`: port for the dashboard HTTP server
+- `--runs-dir`: directory containing `*.jsonl` and `*.map.json` run artifacts
+- `--run-id`: load one specific run by run id or filename instead of watching for the latest live run
+- `--map-path`: serve a custom HTML map file instead of the default bundled viewer
+- `--poll-interval`: how often, in seconds, to poll `--runs-dir` for new runs/updates
+
+Examples:
+
+```bash
+# Watch a runs directory for live updates
+hivewatch map run --runs-dir runs --port 7070
+
+# Open a single saved run in static mode
+hivewatch map run --runs-dir runs --run-id run-abc123
+
+# Serve a custom viewer HTML file
+hivewatch map run --runs-dir runs --map-path examples/fedviz_map.html
+```
+
+The bundled `examples/fedviz_map.html` viewer loads map metadata first and falls back to the JSONL-derived event history for older runs. This keeps the local dashboard flow and a future “save now, render later” flow compatible with the same viewer.
+
 **Weights & Biases:**
 
 ```python
@@ -223,6 +278,11 @@ fedviz
 ```
 
 fedviz never touches the transport layer or the framework. The user bridges their framework to fedviz the same way they would bridge it to W&B.
+
+For map visualization, the intended storage contract is now a standalone metadata artifact in addition to the raw event log. That supports:
+- local CLI runs that immediately launch or serve a map
+- local or remote servers that persist metadata for later display
+- future integrations such as Appflx storing metadata in object storage and reloading it in a separate web tier
 
 ## Project structure
 
