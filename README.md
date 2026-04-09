@@ -104,6 +104,21 @@ hivewatch map run --runs-dir runs --map-path examples/fedviz_map.html
 
 The bundled `examples/fedviz_map.html` viewer loads map metadata first and falls back to the JSONL-derived event history for older runs. This keeps the local dashboard flow and a future “save now, render later” flow compatible with the same viewer.
 
+## Package layout
+
+Map and geo utilities are now grouped into clearer subpackages:
+
+- `src/fedviz/map/`
+  - `metadata.py` for map metadata assembly and event-to-round transformations
+  - `server.py` for the local map/dashboard HTTP server
+- `src/fedviz/geo/`
+  - `utils.py` for IP parsing, location resolution, and APPFL request helpers
+- `src/fedviz/integrations/`
+  - `grpc_geo.py` for package-provided APPFL communicator patching helpers
+
+This keeps map-related files together and avoids requiring users to maintain
+example-local geo helper files.
+
 **Weights & Biases:**
 
 ```python
@@ -180,7 +195,10 @@ fedviz.init(emitters=[MyEmitter()])
 
 ## APPFL Integration
 
-fedviz works with APPFL by subclassing `ServerAgent` to intercept `global_update()`. No changes to client code are required for basic metrics. See `examples/appfl_server.py` for the full server script.
+fedviz works with APPFL by subclassing `ServerAgent` to intercept `global_update()`.
+No changes to client code are required for basic metrics. The APPFL example now
+uses package-provided helpers from `fedviz.geo` and `fedviz.integrations`
+instead of defining a local `map_utils.py`.
 
 ```python
 from fedviz.emitters import WandbEmitter, MLflowEmitter
@@ -206,7 +224,9 @@ class FedVizServerAgent(ServerAgent):
         return result
 ```
 
-For richer communication metrics (bytes sent, gradient norm, CPU/RAM), add them to your client trainer's `get_parameters()` return metadata. See the metadata contract below.
+For richer communication metrics (bytes sent, gradient norm, CPU/RAM), add them
+to your client trainer's `get_parameters()` return metadata. See the metadata
+contract below.
 
 ## Metadata contract
 

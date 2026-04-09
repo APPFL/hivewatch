@@ -1,19 +1,30 @@
 # Quick Start
 
-foobar brief description.
-
-## Overview
-
-foobar detailed overview.
+fedviz is a lightweight monitoring toolkit for federated and distributed
+training workflows.
 
 ## Installation
 
 ```bash
-$ pip install foobar
+pip install -e .
 ```
 
-Documentation on installing for local development is provided in [Contributing](contributing/index.md).
+## Basic usage
 
-## Usage
+```python
+import fedviz
+from fedviz.emitters import SSEEmitter
 
-foobar usage example.
+fedviz.init(
+    algorithm="FedAvg",
+    emitters=[SSEEmitter(port=7070, serve_map=True)],
+)
+```
+
+## Source layout
+
+Recent refactors group related code into clearer subpackages:
+
+- `src/fedviz/map/` for map metadata and map server code
+- `src/fedviz/geo/` for IP parsing and geolocation helpers
+- `src/fedviz/integrations/` for APPFL communicator patch helpers

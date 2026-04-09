@@ -4,7 +4,7 @@ This example runs a 2-client federated learning job using [APPFL](https://github
 
 ## What the example does
 
-- **Server** (`run_server.py`): Subclasses APPFL's `ServerAgent`, intercepts each client update, and forwards metrics (accuracy, loss, gradient norm, resource usage, bytes sent) to fedviz. At the end of every round it logs aggregated round-level metrics. Uses `FedAvgAggregator` with 2 clients and runs for 10 global epochs.
+- **Server** (`run_server.py`): Subclasses APPFL's `ServerAgent`, intercepts each client update, and forwards metrics (accuracy, loss, gradient norm, resource usage, bytes sent) to fedviz. At the end of every round it logs aggregated round-level metrics. It now imports geo helpers from `fedviz.geo` and communicator patching helpers from `fedviz.integrations` instead of relying on a local `map_utils.py`. Uses `FedAvgAggregator` with 2 clients and runs for 10 global epochs.
 - **Clients** (`run_client.py`): Standard APPFL clients. Each loads a partitioned (non-IID) split of MNIST, trains a small CNN locally with Adam, and pushes updates to the server over gRPC.
 
 ## Prerequisites
@@ -62,3 +62,11 @@ fedviz.init(
 To use only one backend, remove the unwanted emitter from the list.
 
 For an Appflx-style deployment, the map metadata file is the preferred interchange format: save it locally during training, move it to shared storage such as S3, and have a separate web tier reload it later with the same viewer.
+
+## Source layout
+
+The APPFL example now uses the package layout below:
+
+- `src/fedviz/map/` for map metadata and map server code
+- `src/fedviz/geo/` for IP parsing and geolocation helpers
+- `src/fedviz/integrations/` for APPFL communicator patch helpers
