@@ -27,8 +27,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from ..map_server import MapServer
-from ..map_metadata import merge_client_state
+from ..map import MapServer, merge_client_state
 from ..schema import ClientUpdate, RoundSummary
 
 logger = logging.getLogger("fedviz.emitters.sse")

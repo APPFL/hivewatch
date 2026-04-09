@@ -10,7 +10,7 @@ from pathlib import Path
 from socketserver import ThreadingMixIn
 from typing import Dict, List, Optional
 
-from .map_metadata import build_map_metadata_from_events
+from .metadata import build_map_metadata_from_events
 
 logger = logging.getLogger("fedviz.map_server")
 
@@ -74,10 +74,10 @@ class MapServer:
                 elif path == "/runs":
                     self._serve_runs()
                 elif path.startswith("/runs/") and path.endswith("/metadata"):
-                    run_id = path[len("/runs/"):-len("/metadata")]
+                    run_id = path[len("/runs/") : -len("/metadata")]
                     self._serve_run_metadata(run_id)
                 elif path.startswith("/runs/") and path.endswith("/events"):
-                    run_id = path[len("/runs/"):-len("/events")]
+                    run_id = path[len("/runs/") : -len("/events")]
                     self._serve_run_events(run_id)
                 else:
                     self.send_response(404)
@@ -90,7 +90,7 @@ class MapServer:
                 candidates += [
                     Path("examples/fedviz_map.html"),
                     Path("fedviz_map.html"),
-                    Path(__file__).parent.parent.parent / "examples" / "fedviz_map.html",
+                    Path(__file__).parent.parent.parent.parent / "examples" / "fedviz_map.html",
                 ]
                 for candidate in candidates:
                     if candidate.exists():
@@ -116,15 +116,10 @@ class MapServer:
 
                 if server._live_run_id:
                     mode = "live" if server.watch else "static"
-                    msg = json.dumps({
-                        "event_type": "init",
-                        "run_id": server._live_run_id,
-                        "mode": mode
-                    })
+                    msg = json.dumps({"event_type": "init", "run_id": server._live_run_id, "mode": mode})
                     self.wfile.write(f"data: {msg}\n\n".encode("utf-8"))
                     self.wfile.flush()
 
-                    # In static mode, send all events immediately
                     if not server.watch:
                         jsonl_path = server.runs_dir / f"{server._live_run_id}.jsonl"
                         if jsonl_path.exists():
@@ -135,21 +130,19 @@ class MapServer:
                                         line = line.strip()
                                         if not line:
                                             continue
-                                        # Skip the first "init" event from the file (file has its own)
                                         if first:
                                             try:
                                                 obj = json.loads(line)
                                                 if obj.get("event_type") == "init":
                                                     first = False
                                                     continue
-                                            except:
+                                            except Exception:
                                                 pass
                                             first = False
                                         self.wfile.write(f"data: {line}\n\n".encode("utf-8"))
                                         self.wfile.flush()
                             except Exception as exc:
                                 logger.warning("[fedviz] error reading events: %s", exc)
-                        # Send finish event to signal end of playback
                         self.wfile.write(b"data: {\"event_type\": \"finished\"}\n\n")
                         self.wfile.flush()
                         return
@@ -171,14 +164,13 @@ class MapServer:
 
             def _serve_runs(self):
                 runs = []
-                
-                # If a specific run_id was requested, only serve that run
+
                 if server._live_run_id:
                     jsonl_path = server.runs_dir / f"{server._live_run_id}.jsonl"
                     if not jsonl_path.exists():
                         self._serve_text(f"run {server._live_run_id} not found", 404)
                         return
-                    
+
                     try:
                         with jsonl_path.open("r", encoding="utf-8") as handle:
                             first_line = handle.readline().strip()
@@ -186,7 +178,7 @@ class MapServer:
                                 header = json.loads(first_line)
                                 with jsonl_path.open("r", encoding="utf-8") as handle:
                                     num_events = sum(1 for _ in handle)
-                                
+
                                 runs.append(
                                     {
                                         "run_id": header.get("run_id", jsonl_path.stem),
@@ -201,7 +193,6 @@ class MapServer:
                     except Exception as exc:
                         logger.warning("[fedviz/map] could not read %s: %s", jsonl_path, exc)
                 else:
-                    # Serve all runs sorted by modification time
                     for jsonl_path in sorted(
                         server.runs_dir.glob("*.jsonl"),
                         key=lambda p: p.stat().st_mtime,
@@ -325,72 +316,3 @@ class MapServer:
                 self._subscribers.remove(q)
             except ValueError:
                 pass
-
-    def _prime_watch_offsets(self):
-        if self._live_run_id:
-            # Only watch the specified run
-            jsonl_path = self.runs_dir / f"{self._live_run_id}.jsonl"
-            if jsonl_path.exists():
-                self._seen_offsets[jsonl_path] = jsonl_path.stat().st_size
-        else:
-            # Watch all runs
-            latest = self._find_latest_run_path()
-            if latest is not None:
-                self._live_run_id = latest.stem
-
-            for jsonl_path in self.runs_dir.glob("*.jsonl"):
-                self._seen_offsets[jsonl_path] = jsonl_path.stat().st_size
-
-    def _watch_loop(self):
-        while True:
-            try:
-                self._poll_run_files()
-            except Exception as exc:
-                logger.warning("[fedviz/map] watch loop error: %s", exc)
-            time.sleep(self.poll_interval)
-
-    def _poll_run_files(self):
-        for jsonl_path in sorted(self._seen_offsets.keys()):
-            size = jsonl_path.stat().st_size
-            offset = self._seen_offsets.get(jsonl_path, 0)
-
-            if size < offset:
-                offset = 0
-
-            if size == offset:
-                continue
-
-            with jsonl_path.open("r", encoding="utf-8") as handle:
-                handle.seek(offset)
-                for line in handle:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        payload = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    self.publish(payload)
-                self._seen_offsets[jsonl_path] = handle.tell()
-
-            self._live_run_id = jsonl_path.stem
-
-    def _find_latest_run_path(self) -> Optional[Path]:
-        candidates = list(self.runs_dir.glob("*.jsonl"))
-        if not candidates:
-            return None
-        return max(candidates, key=lambda path: path.stat().st_mtime)
-
-    @staticmethod
-    def read_events(jsonl_path: Path) -> List[dict]:
-        events = []
-        with jsonl_path.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    events.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
-        return events

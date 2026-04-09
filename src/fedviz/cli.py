@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 
-from .map_server import MapServer
+from .map import MapServer
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -1,15 +1,15 @@
-"""Utility functions for fedviz geo-location and client IP resolution."""
+from __future__ import annotations
 
 import requests
 
 
 def is_local(peer: str) -> bool:
-    """Check if peer is local/non-routable."""
-    return not peer or any(x in peer for x in ("127.0.0.1", "localhost", "[::1]"))
+    """Check if peer is local or otherwise non-routable."""
+    return not peer or any(token in peer for token in ("127.0.0.1", "localhost", "[::1]"))
 
 
 def parse_ip(raw_peer: str) -> str:
-    """Extract plain IP from gRPC peer string like 'ipv4:54.183.207.31:50546'."""
+    """Extract a plain IP from a gRPC peer string like ``ipv4:1.2.3.4:50546``."""
     if not raw_peer:
         return ""
     parts = raw_peer.replace("ipv4:", "").replace("ipv6:", "").split(":")
@@ -17,7 +17,7 @@ def parse_ip(raw_peer: str) -> str:
 
 
 def get_location(ip: str) -> dict:
-    """Resolve IP to location using ipinfo.io (free, no API key needed)."""
+    """Resolve an IP to location metadata using ipinfo.io."""
     try:
         response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
         if response.status_code == 200:
@@ -37,18 +37,18 @@ def get_location(ip: str) -> dict:
                 location["lat"] = float(lat)
                 location["lng"] = float(lng)
             return location
-    except Exception as e:
-        print(f"[fedviz/geo] Failed to resolve IP {ip}: {e}")
+    except Exception as exc:
+        print(f"[fedviz/geo] Failed to resolve IP {ip}: {exc}")
     return {}
 
 
 def extract_client_id(obj):
-    """Extract client_id from request object."""
+    """Extract ``client_id`` from an APPFL request object."""
     try:
         return obj.header.client_id
     except (AttributeError, TypeError):
         for attr in ("client_id", "id"):
-            val = getattr(obj, attr, None)
-            if val:
-                return val
+            value = getattr(obj, attr, None)
+            if value:
+                return value
     return None

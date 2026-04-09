@@ -1,3 +1,11 @@
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
 import fedviz
 import argparse
 import os
@@ -5,7 +13,8 @@ from omegaconf import OmegaConf
 from appfl.agent import ServerAgent
 from appfl.comm.grpc import GRPCServerCommunicator, serve
 from fedviz.emitters import WandbEmitter, MLflowEmitter, SSEEmitter
-from map_utils import is_local, parse_ip, get_location, extract_client_id
+from fedviz.geo import get_location, is_local, parse_ip
+from fedviz.integrations import patch_communicator_for_geo
 
 
 # ── FedViz Server Agent ───────────────────────────────────────────────────────
@@ -79,45 +88,6 @@ class FedVizServerAgent(ServerAgent):
         )
 
         return result
-
-
-# ── Patch communicator to capture peer IP per client_id ───────────────────────
-def patch_communicator_for_geo(communicator, server_agent: FedVizServerAgent):
-    """Wrap RPC methods to capture peer->client_id mapping on connection."""
-    
-    def record_peer(client_id, peer):
-        """Record peer mapping if not already present."""
-        if client_id and str(client_id) not in server_agent._peer_by_client:
-            server_agent._peer_by_client[str(client_id)] = peer
-            print(f"[fedviz/patch] Mapped client_id={client_id!r} -> peer={peer!r}")
-
-    def wrap_method(original):
-        """Wrap RPC method to capture peer and client_id."""
-        def wrapped(request_or_iter, context):
-            peer = context.peer()
-            print(f"[fedviz/patch] Incoming connection | peer={peer!r}")
-            
-            # Handle both streaming and non-streaming requests
-            if hasattr(request_or_iter, '__iter__') and hasattr(request_or_iter, '__next__'):
-                def capturing_iterator():
-                    for request in request_or_iter:
-                        record_peer(extract_client_id(request), peer)
-                        yield request
-                return original(capturing_iterator(), context)
-            else:
-                record_peer(extract_client_id(request_or_iter), peer)
-                return original(request_or_iter, context)
-        
-        return wrapped
-
-    # Patch all RPC methods that might be called by clients
-    for method_name in ["GetConfiguration", "GetGlobalModel", "UpdateGlobalModel", "InvokeCustomAction"]:
-        if hasattr(communicator, method_name):
-            setattr(communicator, method_name, wrap_method(getattr(communicator, method_name)))
-            print(f"[fedviz] Patched: {method_name}")
-    
-    print("[fedviz] All RPC methods patched for geo IP resolution")
-
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 argparser = argparse.ArgumentParser()
