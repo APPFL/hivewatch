@@ -61,11 +61,10 @@ fedviz.init(
 
 To use only one backend, remove the unwanted emitter from the list.
 
-For an Appflx-style deployment, the map metadata file is the preferred interchange format: save it locally during training, move it to shared storage such as S3, and have a separate web tier reload it later with the same viewer.
 
 ## Source layout
 
-The APPFL example now uses the package layout below:
+The APPFL example uses the package layout below:
 
 - `src/fedviz/map/` for map metadata and map server code
 - `src/fedviz/geo/` for client-side location resolution helpers
