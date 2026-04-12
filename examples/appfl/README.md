@@ -57,7 +57,7 @@ fedviz.init(
 
 - **W&B**: Metrics appear in the `my-fl-project-wandb` project. Requires `WANDB_API_KEY` to be set, or run `wandb login` first.
 - **MLflow**: Runs are recorded in the `my-fl-project-mlflow` experiment. The tracking URI defaults to `./mlruns`; override with `MLFLOW_TRACKING_URI`.
-- **Map metadata + local viewer**: `SSEEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. The metadata now includes the original server location as well as client locations, so the server marker stays correct when runs are replayed elsewhere. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
+- **Map metadata + local viewer**: `SSEEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
 
 To use only one backend, remove the unwanted emitter from the list.
 
