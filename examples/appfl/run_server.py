@@ -9,12 +9,12 @@ if str(SRC) not in sys.path:
 import fedviz
 import argparse
 import os
+import socket
 from omegaconf import OmegaConf
 from appfl.agent import ServerAgent
 from appfl.comm.grpc import GRPCServerCommunicator, serve
 from fedviz.emitters import WandbEmitter, MLflowEmitter, SSEEmitter
-from fedviz.geo import get_location, is_local, parse_ip
-from fedviz.integrations import patch_communicator_for_geo
+from fedviz.geo import get_location
 
 
 # ── FedViz Server Agent ───────────────────────────────────────────────────────
@@ -24,8 +24,6 @@ class FedVizServerAgent(ServerAgent):
         self._current_round = -1
         self._last_accuracy = 0.0
         self._last_loss     = 0.0
-        self._peer_by_client = {}       # client_id (str) -> raw peer string
-        self._client_locs    = {}       # client_id (str) -> location dict
 
     def global_update(self, client_id, local_model, *args, **kwargs):
         round_num = kwargs.get("round", 0)
@@ -44,31 +42,6 @@ class FedVizServerAgent(ServerAgent):
         self._last_accuracy = kwargs.get("val_accuracy", 0.0)
         self._last_loss     = kwargs.get("val_loss",     0.0)
 
-        # ── Resolve client IP and location ────────────────────────────────────
-        raw_peer = self._peer_by_client.get(str(client_id), "")
-        parsed_ip = parse_ip(raw_peer)
-        geo = {}
-
-        print(f"\n[CLIENT] client_id={client_id} | round={round_num}")
-        print(f"  raw_peer  : {raw_peer!r}")
-        print(f"  parsed_ip : {parsed_ip!r}")
-
-        if parsed_ip and not is_local(parsed_ip):
-            # Resolve location only once per client
-            if str(client_id) not in self._client_locs:
-                self._client_locs[str(client_id)] = get_location(parsed_ip)
-            
-            loc = self._client_locs[str(client_id)]
-            if loc:
-                print(f"  location  : {loc.get('city')}, {loc.get('region')}, {loc.get('country')}")
-                print(f"  org       : {loc.get('org')}")
-                print(f"  lat/lng   : {loc.get('lat')}, {loc.get('lng')}")
-                geo = {k: v for k, v in loc.items() if k in ("lat", "lng", "city", "country")}
-            else:
-                print(f"  location  : Could not resolve")
-        else:
-            print(f"  location  : Local/non-routable, skipping geo resolution")
-
         # ── Run aggregation ───────────────────────────────────────────────────
         result = super().global_update(client_id, local_model, *args, **kwargs)
 
@@ -84,7 +57,10 @@ class FedVizServerAgent(ServerAgent):
             cpu_pct        = kwargs.get("cpu_pct"),
             ram_mb         = kwargs.get("ram_mb"),
             bytes_sent     = kwargs.get("bytes_sent", 0),
-            **geo,
+            lat            = kwargs.get("lat"),
+            lng            = kwargs.get("lng"),
+            city           = kwargs.get("city"),
+            country        = kwargs.get("country"),
         )
 
         return result
@@ -122,6 +98,19 @@ fedviz.init(
     ],
 )
 
+server_location = get_location()
+server_metadata = {
+    "host": socket.gethostname(),
+    "protocol": "gRPC / APPFL",
+    **server_location,
+}
+fedviz.set_server_metadata(**server_metadata)
+print(
+    "[fedviz/server] resolved server location "
+    f"{server_metadata.get('city', 'Unknown')}, {server_metadata.get('country', 'Unknown')} "
+    f"({server_metadata.get('lat')}, {server_metadata.get('lng')})"
+)
+
 server_agent = FedVizServerAgent(server_agent_config=server_agent_config)
 
 communicator = GRPCServerCommunicator(
@@ -129,7 +118,6 @@ communicator = GRPCServerCommunicator(
     logger=server_agent.logger,
     **server_agent_config.server_configs.comm_configs.grpc_configs,
 )
-patch_communicator_for_geo(communicator, server_agent)
 
 try:
     serve(communicator, **server_agent_config.server_configs.comm_configs.grpc_configs)
@@ -141,21 +129,5 @@ finally:
             global_accuracy = server_agent._last_accuracy,
             global_loss     = server_agent._last_loss,
         )
-
-    # ── Print client IP and location summary ──────────────────────────────────
-    print("\n" + "="*60)
-    print("TRAINING COMPLETE — CLIENT SUMMARY")
-    print("="*60)
-    for client_id, raw_peer in server_agent._peer_by_client.items():
-        parsed_ip = parse_ip(raw_peer)
-        loc = server_agent._client_locs.get(client_id, {})
-        print(f"\n  Client   : {client_id}")
-        print(f"  IP       : {parsed_ip}")
-        print(f"  City     : {loc.get('city', 'Unknown')}")
-        print(f"  Region   : {loc.get('region', 'Unknown')}")
-        print(f"  Country  : {loc.get('country', 'Unknown')}")
-        print(f"  Org      : {loc.get('org', 'Unknown')}")
-        print(f"  Lat/Lng  : {loc.get('lat')}, {loc.get('lng')}")
-    print("="*60 + "\n")
 
     fedviz.finish()

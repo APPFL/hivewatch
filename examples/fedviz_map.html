@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
-  /* ── Themes ── */
   [data-theme="light"] {
     --bg:      #f4f6f9;
     --surface: #ffffff;
@@ -33,8 +32,6 @@
 
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; height:100vh; display:flex; flex-direction:column; overflow:hidden; transition:background 0.2s, color 0.2s; }
-
-  /* ── Header ── */
   header { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background:var(--surface); border-bottom:1px solid var(--border); z-index:1000; flex-shrink:0; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
   .logo { display:flex; align-items:center; gap:10px; }
   .logo-mark { width:30px; height:30px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:13px; color:white; }
@@ -51,11 +48,7 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
   .theme-btn { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:5px 10px; font-size:14px; cursor:pointer; color:var(--muted); transition:all 0.15s; }
   .theme-btn:hover { border-color:var(--accent); color:var(--accent); }
-
-  /* ── Main layout ── */
   .main { display:flex; flex:1; overflow:hidden; min-height:0; }
-
-  /* ── Runs panel ── */
   .runs-panel { width:190px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
   .runs-panel-header { padding:10px 12px; border-bottom:1px solid var(--border); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between; align-items:center; }
   .refresh-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:13px; padding:2px 4px; border-radius:4px; transition:color 0.15s; }
@@ -72,8 +65,6 @@
   .run-badge { display:inline-block; font-size:8px; padding:1px 5px; border-radius:3px; font-weight:600; margin-left:4px; vertical-align:middle; }
   .run-badge.live { background:rgba(16,185,129,0.15); color:var(--green); }
   .run-badge.done { background:rgba(113,128,150,0.12); color:var(--muted); }
-
-  /* ── Sidebar ── */
   .sidebar { width:250px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
   .sidebar-section { padding:12px 14px; border-bottom:1px solid var(--border); }
   .section-title { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
@@ -96,8 +87,6 @@
   .metric-chip { background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:3px 6px; font-size:10px; }
   .metric-chip .val { color:var(--text); font-weight:500; }
   .metric-chip .lbl { color:var(--muted); font-size:9px; }
-
-  /* ── Map ── */
   .map-area { flex:1; position:relative; display:flex; flex-direction:column; min-height:0; }
   #map { flex:1; z-index:1; min-height:0; }
   .leaflet-tile-pane { filter: var(--tile-filter); transition: filter 0.3s; }
@@ -108,8 +97,24 @@
   .popup-row:last-child { border-bottom:none; }
   .popup-key   { color:var(--muted); }
   .popup-value { color:var(--text); font-weight:500; }
-
-  /* ── Playback bar ── */
+  .packet-tooltip .leaflet-tooltip-content { margin:0; }
+  .packet-tooltip {
+    background:var(--surface)!important;
+    border:1px solid var(--border)!important;
+    border-radius:10px!important;
+    color:var(--text)!important;
+    box-shadow:0 8px 24px rgba(0,0,0,0.16)!important;
+    font-family:'JetBrains Mono',monospace!important;
+    padding:0!important;
+  }
+  .packet-tooltip:before { border-right-color:var(--border)!important; }
+  .packet-meta { min-width:190px; padding:10px 12px; }
+  .packet-title { font-family:'Syne',sans-serif; font-size:12px; font-weight:700; margin-bottom:8px; color:var(--text); }
+  .packet-subtitle { font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .packet-row { display:flex; justify-content:space-between; gap:12px; padding:3px 0; border-bottom:1px solid var(--border); font-size:10px; }
+  .packet-row:last-child { border-bottom:none; }
+  .packet-key { color:var(--muted); }
+  .packet-value { color:var(--text); font-weight:500; }
   .playback-bar { background:var(--surface); border-top:1px solid var(--border); padding:10px 16px; display:flex; align-items:center; gap:12px; flex-shrink:0; z-index:100; }
   .play-btn { width:32px; height:32px; border-radius:50%; background:var(--accent); border:none; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all 0.2s; flex-shrink:0; }
   .play-btn:hover:not(:disabled) { background:#2563eb; transform:scale(1.05); }
@@ -127,8 +132,6 @@
   .speed-select { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:4px 8px; font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--text); cursor:pointer; }
   .playback-mode { font-size:10px; color:var(--muted); flex-shrink:0; }
   .playback-mode.replay { color:var(--orange); font-weight:600; }
-
-  /* ── Log panel ── */
   .log-panel { position:absolute; bottom:16px; right:16px; width:290px; background:var(--surface); border:1px solid var(--border); border-radius:10px; z-index:999; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.12); opacity:0.95; }
   .log-header { padding:8px 12px; border-bottom:1px solid var(--border); font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between; }
   .log-entries { max-height:110px; overflow-y:auto; padding:6px; }
@@ -254,8 +257,6 @@ const SSE_URL      = `${SERVER}/stream`;
 const METADATA_URL = params.get("metadata_url");
 const EVENTS_URL   = params.get("events_url");
 const AUTO_RUN_ID  = params.get("run_id");
-
-// ── State ─────────────────────────────────────────────────────────────────────
 const state = {
   clients:    {},
   round:      0,
@@ -280,16 +281,12 @@ const pb = {
   speed:     1000,
   runId:     null,
 };
-
-// ── Theme ─────────────────────────────────────────────────────────────────────
 function toggleTheme() {
   const html = document.documentElement;
   const isDark = html.getAttribute("data-theme") === "dark";
   html.setAttribute("data-theme", isDark ? "light" : "dark");
   document.getElementById("theme-btn").textContent = isDark ? "🌙" : "☀️";
 }
-
-// ── Formatters ─────────────────────────────────────────────────────────────────
 function fmtAcc(val) {
   if (val == null) return "—";
   const pct = val <= 1.0 ? val * 100 : val;
@@ -299,8 +296,15 @@ function fmtLoss(val) {
   if (val == null) return "—";
   return parseFloat(val).toFixed(4);
 }
-
-// ── Map ───────────────────────────────────────────────────────────────────────
+function fmtNumber(val, digits = 3) {
+  if (val == null) return "—";
+  const num = Number(val);
+  return Number.isFinite(num) ? num.toFixed(digits) : "—";
+}
+function toFiniteNumber(val) {
+  const num = Number(val);
+  return Number.isFinite(num) ? num : null;
+}
 const map = L.map("map", { center:[30,10], zoom:2 });
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution:"© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
@@ -324,6 +328,8 @@ const serverIcon = L.divIcon({
   iconSize:[20,20], iconAnchor:[10,10],
 });
 let serverMarker = null;
+let serverResolvedFromMetadata = false;
+let serverInferredFromClient = false;
 
 function isLocalHost(host) {
   return !host || ["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"].includes(host);
@@ -349,6 +355,7 @@ function buildServerPopup(server) {
 }
 
 function renderServerMarker(server) {
+  if (!server || !Number.isFinite(server.lat) || !Number.isFinite(server.lng)) return;
   SERVER_LL = [server.lat, server.lng];
   const popup = buildServerPopup(server);
   if (serverMarker) {
@@ -365,7 +372,36 @@ function renderServerMarker(server) {
   });
 }
 
+function inferServerFromClient(client) {
+  if (serverResolvedFromMetadata) return;
+  if (!Number.isFinite(client.lat) || !Number.isFinite(client.lng)) return;
+  if (serverMarker && !serverInferredFromClient) return;
+  renderServerMarker({
+    lat: client.lat,
+    lng: client.lng,
+    city: client.city || "Unknown",
+    region: client.region || "",
+    country: client.country || "",
+    org: "Inferred from client",
+    protocol: "gRPC / APPFL",
+    host: client.host || "",
+    fallback: true,
+  });
+  serverInferredFromClient = true;
+}
+
+function applyServerMetadata(server) {
+  if (!server) return false;
+  const lat = Number(server.lat);
+  const lng = Number(server.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  renderServerMarker({...server, lat, lng});
+  serverResolvedFromMetadata = true;
+  return true;
+}
+
 async function resolveServerLocation() {
+  if (serverResolvedFromMetadata) return;
   const host = getServerHost();
   if (isLocalHost(host)) {
     renderServerMarker(ARGONNE_SERVER);
@@ -424,6 +460,59 @@ function pingPong(t) {
   return t < 0.5 ? t * 2 : (1 - t) * 2;
 }
 
+function hashString(input) {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getPacketClientLL(id, client) {
+  const base = [client.lat, client.lng];
+  const dist = Math.hypot(base[0] - SERVER_LL[0], base[1] - SERVER_LL[1]);
+  if (dist >= 0.05) return base;
+  const angle = (hashString(String(id)) % 360) * (Math.PI / 180);
+  const offset = 0.12;
+  return [base[0] + Math.cos(angle) * offset, base[1] + Math.sin(angle) * offset];
+}
+
+function buildPacketTooltip(id, direction) {
+  const client = state.clients[id] || {};
+  const directionLabel = direction === "uplink" ? "Client to Server" : "Server to Client";
+  return `
+    <div class="packet-meta">
+      <div class="packet-title">${id}</div>
+      <div class="packet-subtitle">${directionLabel}</div>
+      <div class="packet-row"><span class="packet-key">Round</span><span class="packet-value">${state.round || "—"}</span></div>
+      <div class="packet-row"><span class="packet-key">Grad Norm</span><span class="packet-value">${fmtNumber(client.gradient_norm, 2)}</span></div>
+      <div class="packet-row"><span class="packet-key">Grad Magnitude</span><span class="packet-value">${fmtNumber(client.gradient_magnitude, 4)}</span></div>
+      <div class="packet-row"><span class="packet-key">Accuracy</span><span class="packet-value">${fmtAcc(client.local_accuracy)}</span></div>
+      <div class="packet-row"><span class="packet-key">Loss</span><span class="packet-value">${fmtLoss(client.local_loss)}</span></div>
+      <div class="packet-row"><span class="packet-key">Samples</span><span class="packet-value">${client.num_samples || "—"}</span></div>
+    </div>
+  `;
+}
+
+function refreshPacketTooltips(id) {
+  if (!packets[id]) return;
+  packets[id].uplink.setTooltipContent(buildPacketTooltip(id, "uplink"));
+  packets[id].downlink.setTooltipContent(buildPacketTooltip(id, "downlink"));
+}
+
+function attachPacketHover(marker, id, direction) {
+  marker.bindTooltip(buildPacketTooltip(id, direction), {
+    direction: "right",
+    offset: [10, 0],
+    sticky: true,
+    opacity: 0.98,
+    className: "packet-tooltip",
+  });
+  marker.on("mouseover", () => marker.setStyle({ radius: 7, weight: 1.6 }));
+  marker.on("mouseout", () => marker.setStyle({ radius: 5, weight: 1.2 }));
+}
+
 function ensureClientPackets(id, ll, color) {
   const uplinkColor = color || "#38bdf8";
   const downlinkColor = "#f59e0b";
@@ -436,6 +525,7 @@ function ensureClientPackets(id, ll, color) {
         fillColor: uplinkColor,
         fillOpacity: 0.95,
         opacity: 1,
+        interactive: true,
       }).addTo(map),
       downlink: L.circleMarker(ll, {
         radius: 5,
@@ -444,11 +534,17 @@ function ensureClientPackets(id, ll, color) {
         fillColor: downlinkColor,
         fillOpacity: 0.95,
         opacity: 1,
+        interactive: true,
       }).addTo(map),
     };
+    attachPacketHover(packets[id].uplink, id, "uplink");
+    attachPacketHover(packets[id].downlink, id, "downlink");
   }
   packets[id].uplink.setStyle({ fillColor: uplinkColor }).setLatLng(ll);
   packets[id].downlink.setStyle({ fillColor: downlinkColor }).setLatLng(ll);
+  packets[id].uplink.bringToFront();
+  packets[id].downlink.bringToFront();
+  refreshPacketTooltips(id);
 }
 
 function stopNetworkAnimation() {
@@ -459,7 +555,10 @@ function stopNetworkAnimation() {
 }
 
 function animateNetworkTraffic(now) {
-  const activeIds = Object.keys(lines).filter(id => state.clients[id]?.lat && state.clients[id]?.lng);
+  const activeIds = Object.keys(lines).filter(id => {
+    const client = state.clients[id];
+    return client && Number.isFinite(client.lat) && Number.isFinite(client.lng);
+  });
   if (!activeIds.length) {
     networkAnim.frame = null;
     return;
@@ -471,10 +570,10 @@ function animateNetworkTraffic(now) {
 
   activeIds.forEach(id => {
     const client = state.clients[id];
-    const ll = [client.lat, client.lng];
-    ensureClientPackets(id, ll, accColor(client.local_accuracy));
-    packets[id].uplink.setLatLng(lerpLatLng(ll, SERVER_LL, uploadProgress));
-    packets[id].downlink.setLatLng(lerpLatLng(SERVER_LL, ll, downloadProgress));
+    const packetLL = getPacketClientLL(id, client);
+    ensureClientPackets(id, packetLL, accColor(client.local_accuracy));
+    packets[id].uplink.setLatLng(lerpLatLng(packetLL, SERVER_LL, uploadProgress));
+    packets[id].downlink.setLatLng(lerpLatLng(SERVER_LL, packetLL, downloadProgress));
   });
 
   networkAnim.frame = requestAnimationFrame(animateNetworkTraffic);
@@ -490,7 +589,10 @@ function syncNetworkAnimation(durationMs) {
 function upsertClient(id, data) {
   state.clients[id] = Object.assign(state.clients[id] || {}, data);
   const c = state.clients[id];
-  if (!c.lat || !c.lng) return;
+  c.lat = toFiniteNumber(c.lat);
+  c.lng = toFiniteNumber(c.lng);
+  if (!Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return;
+  inferServerFromClient(c);
 
   const ll  = [c.lat, c.lng];
   const col = accColor(c.local_accuracy);
@@ -523,7 +625,10 @@ function upsertClient(id, data) {
     lines[id]   = L.polyline([ll,SERVER_LL],{color:col,weight:2.8,opacity:0.82,dashArray:"10 8"}).addTo(map);
   }
 
-  ensureClientPackets(id, ll, col);
+  const packetLL = getPacketClientLL(id, c);
+  ensureClientPackets(id, packetLL, col);
+  refreshPacketTooltips(id);
+  if (!networkAnim.frame) syncNetworkAnimation(state.roundDurationMs);
 }
 
 function clearMap() {
@@ -541,8 +646,6 @@ function clearMap() {
   state.round = 0; state.globalAcc = null; state.globalLoss = null;
   renderSidebar();
 }
-
-// ── Sidebar ───────────────────────────────────────────────────────────────────
 function renderSidebar() {
   const active = Object.values(state.clients).filter(c=>!c.status||c.status==="active").length;
   document.getElementById("hdr-round").textContent   = state.round || "—";
@@ -577,8 +680,6 @@ function focusClient(id) {
   const c = state.clients[id];
   if (c?.lat && c?.lng) { map.flyTo([c.lat,c.lng],5,{duration:1.2}); markers[id]?.openPopup(); }
 }
-
-// ── Log ───────────────────────────────────────────────────────────────────────
 function addLog(msg, type="update") {
   const now = new Date().toLocaleTimeString("en",{hour12:false});
   const el  = document.getElementById("log-entries");
@@ -590,8 +691,6 @@ function addLog(msg, type="update") {
   state.logCount++;
   document.getElementById("log-count").textContent = `${state.logCount} events`;
 }
-
-// ── Debug ─────────────────────────────────────────────────────────────────────
 function dbg(status, lastEvt) {
   const el = document.getElementById("dbg-sse");
   el.textContent = status;
@@ -599,8 +698,6 @@ function dbg(status, lastEvt) {
   if (lastEvt) document.getElementById("dbg-last").textContent = lastEvt;
   document.getElementById("dbg-count").textContent = state.evtCount;
 }
-
-// ── Live event handler ────────────────────────────────────────────────────────
 function handleLiveEvent(msg) {
   if (typeof msg === "string") {
     try { msg = JSON.parse(msg); } catch(e) { return; }
@@ -609,6 +706,11 @@ function handleLiveEvent(msg) {
   const type = msg.event_type;
   dbg("connected", type);
   if (type === "ping" || type === "connected") return;
+
+  if (type === "server_metadata") {
+    applyServerMetadata(msg.server);
+    return;
+  }
 
   if (type === "init")
     addLog(`Run started — ${msg.algorithm||""}`, "round");
@@ -655,8 +757,6 @@ function handleLiveEvent(msg) {
 
   if (type === "finished") addLog("Run finished", "round");
 }
-
-// ── Build round snapshots from raw JSONL events ───────────────────────────────
 // Groups all events by round number, keeps only the canonical round_end
 // (the one with clients populated, not the empty duplicate APPFL emits)
 function buildRounds(events) {
@@ -703,8 +803,6 @@ function buildRounds(events) {
       };
     });
 }
-
-// ── Apply a round snapshot to the map/sidebar ─────────────────────────────────
 function applyRound(snapshot) {
   state.round      = snapshot.round;
   state.globalAcc  = snapshot.globalAcc;
@@ -720,8 +818,6 @@ function applyRound(snapshot) {
   );
   renderSidebar();
 }
-
-// ── Runs panel ────────────────────────────────────────────────────────────────
 async function loadRuns() {
   const el = document.getElementById("runs-list");
   try {
@@ -779,6 +875,9 @@ async function selectRun(runId, isLive, evt) {
       const events = await res.json();
       pb.rounds    = buildRounds(events);
     }
+    if (!applyServerMetadata(metadata?.server)) {
+      resolveServerLocation();
+    }
     state.totalRounds = pb.rounds.length;
 
     document.getElementById("play-btn").disabled = pb.rounds.length === 0;
@@ -790,6 +889,28 @@ async function selectRun(runId, isLive, evt) {
   } catch(e) {
     addLog(`Failed to load run ${runId}`, "drop");
   }
+}
+
+async function loadServerMetadataForRun(runId) {
+  if (!runId) return false;
+  try {
+    const res = await fetch(`${SERVER}/runs/${runId}/metadata`);
+    if (!res.ok) return false;
+    const metadata = await res.json();
+    return applyServerMetadata(metadata?.server);
+  } catch(_) {
+    return false;
+  }
+}
+
+async function ensureServerMetadata(runId) {
+  const attempts = 4;
+  for (let i = 0; i < attempts; i++) {
+    const found = await loadServerMetadataForRun(runId);
+    if (found) return true;
+    await new Promise(resolve => setTimeout(resolve, 800 * (i + 1)));
+  }
+  return false;
 }
 
 async function loadRunFromSource({ metadataUrl, eventsUrl, runId }) {
@@ -804,10 +925,14 @@ async function loadRunFromSource({ metadataUrl, eventsUrl, runId }) {
     const res = await fetch(metadataUrl);
     const metadata = await res.json();
     pb.rounds = metadata?.rounds || [];
+    if (!applyServerMetadata(metadata?.server)) {
+      resolveServerLocation();
+    }
   } else if (eventsUrl) {
     const res = await fetch(eventsUrl);
     const events = await res.json();
     pb.rounds = buildRounds(events);
+    resolveServerLocation();
   }
 
   state.totalRounds = pb.rounds.length;
@@ -834,8 +959,6 @@ function setMode(mode) {
     document.getElementById("playback-info").textContent = "Playback mode";
   }
 }
-
-// ── Playback ──────────────────────────────────────────────────────────────────
 function togglePlay() {
   pb.playing ? stopPlayback() : startPlayback();
 }
@@ -915,8 +1038,6 @@ function seekTo(e) {
 }
 
 function setSpeed(val) { pb.speed = parseInt(val); }
-
-// ── SSE ───────────────────────────────────────────────────────────────────────
 function connect() {
   const es = new EventSource(SSE_URL);
 
@@ -934,6 +1055,9 @@ function connect() {
 
       if (msg.event_type === "init" && msg.run_id) {
         state.liveRunId = msg.run_id;
+        ensureServerMetadata(msg.run_id).then(found => {
+          if (!found) resolveServerLocation();
+        });
         // Clear map for new run
         clearMap();
         // Only set live mode if explicitly in live mode, otherwise static playback
@@ -991,8 +1115,6 @@ function connect() {
     }
   };
 }
-resolveServerLocation();
-
 if (METADATA_URL || EVENTS_URL) {
   loadRunFromSource({
     metadataUrl: METADATA_URL,
@@ -1000,6 +1122,7 @@ if (METADATA_URL || EVENTS_URL) {
     runId: AUTO_RUN_ID,
   }).catch(() => addLog("Failed to load external run source", "drop"));
 } else {
+  resolveServerLocation();
   connect();
   loadRuns().then(() => {
     if (AUTO_RUN_ID) {

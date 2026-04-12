@@ -4,8 +4,8 @@ This example runs a 2-client federated learning job using [APPFL](https://github
 
 ## What the example does
 
-- **Server** (`run_server.py`): Subclasses APPFL's `ServerAgent`, intercepts each client update, and forwards metrics (accuracy, loss, gradient norm, resource usage, bytes sent) to fedviz. At the end of every round it logs aggregated round-level metrics. It now imports geo helpers from `fedviz.geo` and communicator patching helpers from `fedviz.integrations` instead of relying on a local `map_utils.py`. Uses `FedAvgAggregator` with 2 clients and runs for 10 global epochs.
-- **Clients** (`run_client.py`): Standard APPFL clients. Each loads a partitioned (non-IID) split of MNIST, trains a small CNN locally with Adam, and pushes updates to the server over gRPC.
+- **Server** (`run_server.py`): Subclasses APPFL's `ServerAgent`, intercepts each client update, and forwards metrics plus any client-supplied geo fields to fedviz. At startup it also resolves the server's own location and persists that metadata with the run so shared logs retain the original server marker. At the end of every round it logs aggregated round-level metrics. Uses `FedAvgAggregator` with 2 clients and runs for 10 global epochs.
+- **Clients** (`run_client.py`): Standard APPFL clients. Each loads a partitioned (non-IID) split of MNIST, trains a small CNN locally with Adam, resolves its own location once, and pushes both training metadata and geo fields to the server over gRPC.
 
 ## Prerequisites
 
@@ -57,7 +57,7 @@ fedviz.init(
 
 - **W&B**: Metrics appear in the `my-fl-project-wandb` project. Requires `WANDB_API_KEY` to be set, or run `wandb login` first.
 - **MLflow**: Runs are recorded in the `my-fl-project-mlflow` experiment. The tracking URI defaults to `./mlruns`; override with `MLFLOW_TRACKING_URI`.
-- **Map metadata + local viewer**: `SSEEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
+- **Map metadata + local viewer**: `SSEEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. The metadata now includes the original server location as well as client locations, so the server marker stays correct when runs are replayed elsewhere. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
 
 To use only one backend, remove the unwanted emitter from the list.
 
@@ -68,5 +68,4 @@ For an Appflx-style deployment, the map metadata file is the preferred interchan
 The APPFL example now uses the package layout below:
 
 - `src/fedviz/map/` for map metadata and map server code
-- `src/fedviz/geo/` for IP parsing and geolocation helpers
-- `src/fedviz/integrations/` for APPFL communicator patch helpers
+- `src/fedviz/geo/` for client-side location resolution helpers

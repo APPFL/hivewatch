@@ -17,6 +17,7 @@ __all__ = [
     "log_dropout",
     "log_comm_failure",
     "log_checkpoint",
+    "set_server_metadata",
     "finish",
     "ClientUpdate",
     "RoundSummary",
@@ -45,6 +46,9 @@ def log_comm_failure(round: int, client_id: str, reason: Optional[str] = None):
 
 def log_checkpoint(round: int, path: str, **metadata):
     _r().log_checkpoint(round, path, **metadata)
+
+def set_server_metadata(**metadata):
+    _r().set_server_metadata(**metadata)
 
 def finish():
     _r().finish()

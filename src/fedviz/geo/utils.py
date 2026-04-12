@@ -3,27 +3,15 @@ from __future__ import annotations
 import requests
 
 
-def is_local(peer: str) -> bool:
-    """Check if peer is local or otherwise non-routable."""
-    return not peer or any(token in peer for token in ("127.0.0.1", "localhost", "[::1]"))
-
-
-def parse_ip(raw_peer: str) -> str:
-    """Extract a plain IP from a gRPC peer string like ``ipv4:1.2.3.4:50546``."""
-    if not raw_peer:
-        return ""
-    parts = raw_peer.replace("ipv4:", "").replace("ipv6:", "").split(":")
-    return parts[0] if parts else ""
-
-
-def get_location(ip: str) -> dict:
-    """Resolve an IP to location metadata using ipinfo.io."""
+def get_location(ip: str | None = None) -> dict:
+    """Resolve the current client or a specific IP to location metadata using ipinfo.io."""
     try:
-        response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
+        url = "https://ipinfo.io/json" if not ip else f"https://ipinfo.io/{ip}/json"
+        response = requests.get(url, timeout=5)
         if response.status_code == 200:
             data = response.json()
             location = {
-                "ip": data.get("ip", ip),
+                "ip": data.get("ip", ip or "Unknown"),
                 "city": data.get("city", "Unknown"),
                 "region": data.get("region", "Unknown"),
                 "country": data.get("country", "Unknown"),
@@ -38,12 +26,13 @@ def get_location(ip: str) -> dict:
                 location["lng"] = float(lng)
             return location
     except Exception as exc:
-        print(f"[fedviz/geo] Failed to resolve IP {ip}: {exc}")
+        target = ip or "current client"
+        print(f"[fedviz/geo] Failed to resolve IP for {target}: {exc}")
     return {}
 
 
 def extract_client_id(obj):
-    """Extract ``client_id`` from an APPFL request object."""
+    """Extract ``client_id`` from a request-like object."""
     try:
         return obj.header.client_id
     except (AttributeError, TypeError):

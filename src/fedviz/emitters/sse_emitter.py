@@ -85,6 +85,7 @@ class SSEEmitter:
             "config": config,
             "started_at": header["started_at"],
             "finished_at": None,
+            "server": None,
             "rounds": [],
         }
         self._append(header)
@@ -180,6 +181,19 @@ class SSEEmitter:
             "timestamp":  datetime.now(timezone.utc).isoformat(),
             "path":       path,
         }
+        self._append(payload)
+        self._write_metadata()
+        self._broadcast(payload)
+
+    def on_server_metadata(self, metadata: dict):
+        payload = {
+            "event_type": "server_metadata",
+            "run_id": self.run_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "server": metadata,
+        }
+        if self._map_metadata is not None:
+            self._map_metadata["server"] = metadata
         self._append(payload)
         self._write_metadata()
         self._broadcast(payload)

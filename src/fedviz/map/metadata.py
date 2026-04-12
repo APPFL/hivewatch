@@ -74,6 +74,7 @@ def build_rounds_from_events(events: List[dict]) -> List[dict]:
 
 def build_map_metadata_from_events(events: List[dict]) -> dict:
     init_event = next((event for event in events if event.get("event_type") == "init"), {})
+    server_event = next((event for event in events if event.get("event_type") == "server_metadata"), {})
     finished_event = next(
         (event for event in reversed(events) if event.get("event_type") == "finished"),
         {},
@@ -85,5 +86,6 @@ def build_map_metadata_from_events(events: List[dict]) -> dict:
         "config": init_event.get("config", {}),
         "started_at": init_event.get("started_at"),
         "finished_at": finished_event.get("timestamp"),
+        "server": server_event.get("server"),
         "rounds": build_rounds_from_events(events),
     }

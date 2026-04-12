@@ -82,11 +82,14 @@ The bundled `examples/fedviz_map.html` viewer loads map metadata first and falls
 
 The source tree groups related functionality into focused areas:
 
-- `src/fedviz/map/` for map metadata construction and dashboard serving
-- `src/fedviz/geo/` for gRPC peer parsing and geolocation helpers
-- `src/fedviz/integrations/` for framework-specific integration utilities such as APPFL communicator patching
+- `src/fedviz/map/`
+  - `metadata.py` for map metadata assembly and event-to-round transformations
+  - `server.py` for the local map/dashboard HTTP server
+- `src/fedviz/geo/`
+  - `utils.py` for client-side location resolution helpers
 
-This organization keeps map and geo functionality inside the package rather than requiring example-local helper files.
+This keeps map-related files together and avoids requiring users to maintain
+example-local geo helper files or server-side peer inspection patches.
 
 ### Weights & Biases
 
@@ -167,7 +170,10 @@ fedviz.init(emitters=[MyEmitter()])
 
 ## APPFL Integration
 
-`fedviz` integrates with APPFL by subclassing `ServerAgent` and intercepting `global_update()`. Basic metrics can be collected without modifying client code. The APPFL example uses package-provided geo utilities and integration helpers rather than a local `map_utils.py` file.
+fedviz works with APPFL by subclassing `ServerAgent` to intercept `global_update()`.
+The APPFL example resolves geo on each client and sends `lat`, `lng`, `city`,
+and `country` in the normal client metadata payload. The server simply logs
+those fields instead of trying to infer them from the transport layer.
 
 ```python
 from fedviz.emitters import MLflowEmitter, WandbEmitter
@@ -193,7 +199,8 @@ class FedVizServerAgent(ServerAgent):
         return result
 ```
 
-To capture richer communication and system metrics such as bytes sent, gradient norm, CPU usage, and memory usage, include them in the metadata returned by your client trainer's `get_parameters()` implementation.
+For richer communication metrics and map metadata, add them to your client
+trainer's `get_parameters()` return metadata. See the metadata contract below.
 
 ## Metadata Contract
 
