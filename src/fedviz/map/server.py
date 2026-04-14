@@ -11,6 +11,7 @@ from socketserver import ThreadingMixIn
 from typing import Dict, List, Optional
 
 from .metadata import build_map_metadata_from_events
+from ..geo import get_location
 
 logger = logging.getLogger("fedviz.map_server")
 
@@ -44,6 +45,7 @@ class MapServer:
         self._watch_thread: Optional[threading.Thread] = None
         self._seen_offsets: Dict[Path, int] = {}
         self._live_run_id: Optional[str] = run_id
+        self._server_location: Optional[dict] = None  # cached after first resolve
 
         self.runs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -71,6 +73,8 @@ class MapServer:
                     self._serve_sse()
                 elif path == "/health":
                     self._serve_text("ok")
+                elif path == "/location":
+                    self._serve_json(server._get_server_location())
                 elif path == "/runs":
                     self._serve_runs()
                 elif path.startswith("/runs/") and path.endswith("/metadata"):
@@ -289,6 +293,36 @@ class MapServer:
             self._server.shutdown()
             self._server.server_close()
             self._server = None
+
+    def _get_server_location(self) -> dict:
+        """Resolve and cache this server's own public IP location."""
+        if self._server_location is not None:
+            return self._server_location
+
+        try:
+            import requests
+            res = requests.get("https://ipinfo.io/json", timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                loc = data.get("loc", "")
+                if loc:
+                    lat, lng = loc.split(",")
+                    self._server_location = {
+                        "ip": data.get("ip", ""),
+                        "lat": float(lat),
+                        "lng": float(lng),
+                        "city": data.get("city", "Unknown"),
+                        "region": data.get("region", ""),
+                        "country": data.get("country", "Unknown"),
+                        "org": data.get("org", ""),
+                        "fallback": False,
+                    }
+                    return self._server_location
+        except Exception as exc:
+            logger.debug("[fedviz/map] could not resolve server location: %s", exc)
+
+        # Return empty dict so the frontend knows to use its own fallback
+        return {}
 
     def publish(self, payload: dict):
         if payload.get("run_id"):

@@ -294,4 +294,5 @@ class SSEEmitter:
             "cpu_pct":        c.cpu_pct,
             "ram_mb":         c.ram_mb,
             "status":         c.status,
+            **c.extra,
         }

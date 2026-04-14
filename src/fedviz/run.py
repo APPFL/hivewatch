@@ -91,6 +91,7 @@ class FedVizRun:
         gradient_divergence:  Optional[float] = None,
         aggregation_time_sec: Optional[float] = None,
         algorithm_metadata:   Optional[dict]  = None,
+        **kwargs,
     ):
         clients = self._pending_clients.pop(round, [])
 
