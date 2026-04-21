@@ -167,6 +167,14 @@ class FedVizRun:
                 except Exception as ex:
                     logger.warning(f"[fedviz] emitter on_checkpoint failed: {ex}")
 
+    def set_server_metadata(self, **metadata):
+        for e in self.emitters:
+            if hasattr(e, "on_server_metadata"):
+                try:
+                    e.on_server_metadata(metadata)
+                except Exception as ex:
+                    logger.warning(f"[fedviz] emitter on_server_metadata failed: {ex}")
+
     def finish(self):
         for e in self.emitters:
             if hasattr(e, "finish"):

@@ -1,11 +1,11 @@
 # `APPFL` + `fedviz` Example
 
-This example runs a 2-client federated learning job using [APPFL](https://github.com/APPFL/APPFL) with FedAvg over gRPC, while logging training metrics to W&B and MLflow via **fedviz**.
+This example runs a 2-client federated learning job using [APPFL](https://github.com/APPFL/APPFL) with FedAvg over gRPC, while logging training metrics and map metadata via **fedviz**.
 
 ## What the example does
 
-- **Server** (`run_server.py`): Subclasses APPFL's `ServerAgent`, intercepts each client update, and forwards metrics (accuracy, loss, gradient norm, resource usage, bytes sent) to fedviz. At the end of every round it logs aggregated round-level metrics. Uses `FedAvgAggregator` with 2 clients and runs for 10 global epochs.
-- **Clients** (`run_client.py`): Standard APPFL clients. Each loads a partitioned (non-IID) split of MNIST, trains a small CNN locally with Adam, and pushes updates to the server over gRPC.
+- **Server** (`run_server.py`): Subclasses APPFL's `ServerAgent`, intercepts each client update, and forwards metrics plus any client-supplied geo fields to fedviz. At startup it also resolves the server's own location and persists that metadata with the run so shared logs retain the original server marker. At the end of every round it logs aggregated round-level metrics. Uses `FedAvgAggregator` with 2 clients and runs for 10 global epochs.
+- **Clients** (`run_client.py`): Standard APPFL clients. Each loads a partitioned (non-IID) split of MNIST, trains a small CNN locally with Adam, resolves its own location once, and pushes both training metadata and geo fields to the server over gRPC.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ Make sure you have `appfl` and `fedviz` installed, along with the required depen
 
 ## Running the example
 
-The server must be started before the clients. Open **three terminals**, all from the `examples/appfl/` directory.
+The server must be started before the clients. Open **four terminals**, all from the `examples/appfl/` directory.
 
 **Terminal 1 — server**
 ```bash
@@ -22,12 +22,17 @@ python run_server.py
 python run_server.py --config ./resources/configs/server_fedavg.yaml
 ```
 
-**Terminal 2 — client 1**
+**Terminal 2 — mlflow server**
+```bash
+mlflow server --host 0.0.0.0 --port 5000
+```
+
+**Terminal 3 — client 1**
 ```bash
 python run_client.py --config ./resources/configs/client_1.yaml
 ```
 
-**Terminal 3 — client 2**
+**Terminal 4 — client 2**
 ```bash
 python run_client.py --config ./resources/configs/client_2.yaml
 ```
@@ -36,7 +41,7 @@ Training finishes automatically after 10 global rounds. Results are written to `
 
 ## Monitoring backends
 
-The server initializes two emitters in `run_server.py`:
+The server initializes three emitters in `run_server.py`:
 
 ```python
 fedviz.init(
@@ -44,6 +49,7 @@ fedviz.init(
     config    = dict(server_agent_config.server_configs),
     emitters  = [
         WandbEmitter(project="my-fl-project-wandb"),
+        SSEEmitter(port=7070, serve_map=False),
         MLflowEmitter(experiment="my-fl-project-mlflow"),
     ],
 )
@@ -51,5 +57,6 @@ fedviz.init(
 
 - **W&B**: Metrics appear in the `my-fl-project-wandb` project. Requires `WANDB_API_KEY` to be set, or run `wandb login` first.
 - **MLflow**: Runs are recorded in the `my-fl-project-mlflow` experiment. The tracking URI defaults to `./mlruns`; override with `MLFLOW_TRACKING_URI`.
+- **Map metadata + local viewer**: `SSEEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
 
 To use only one backend, remove the unwanted emitter from the list.

@@ -1,10 +1,13 @@
-
+import os
+import socket
 import fedviz
 import argparse
 from omegaconf import OmegaConf
 from appfl.agent import ServerAgent
 from appfl.comm.grpc import GRPCServerCommunicator, serve
-from fedviz.emitters import WandbEmitter, MLflowEmitter
+from fedviz.emitters import WandbEmitter, MLflowEmitter, SSEEmitter
+from fedviz.geo import get_location
+
 
 class FedVizServerAgent(ServerAgent):
     def __init__(self, *args, **kwargs):
@@ -12,11 +15,11 @@ class FedVizServerAgent(ServerAgent):
         self._current_round = -1
         self._last_accuracy = 0.0
         self._last_loss     = 0.0
-       
 
     def global_update(self, client_id, local_model, *args, **kwargs):
         round_num = kwargs.get("round", 0)
 
+        # Log round transition
         if round_num != self._current_round:
             if self._current_round >= 0:
                 fedviz.log_round(
@@ -30,8 +33,10 @@ class FedVizServerAgent(ServerAgent):
         self._last_accuracy = kwargs.get("val_accuracy", 0.0)
         self._last_loss     = kwargs.get("val_loss",     0.0)
 
+        # Run aggregation
         result = super().global_update(client_id, local_model, *args, **kwargs)
 
+        # Log client update to fedviz
         fedviz.log_client_update(
             client_id      = client_id,
             round          = round_num,
@@ -43,10 +48,13 @@ class FedVizServerAgent(ServerAgent):
             cpu_pct        = kwargs.get("cpu_pct"),
             ram_mb         = kwargs.get("ram_mb"),
             bytes_sent     = kwargs.get("bytes_sent", 0),
+            lat            = kwargs.get("lat"),
+            lng            = kwargs.get("lng"),
+            city           = kwargs.get("city"),
+            country        = kwargs.get("country"),
         )
 
         return result
-
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument(
@@ -58,20 +66,39 @@ argparser.add_argument(
 args = argparser.parse_args()
 
 server_agent_config = OmegaConf.load(args.config)
+mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
+mlflow_experiment   = os.environ.get("MLFLOW_EXPERIMENT", "my-fl-project-mlflow")
+
+print(f"[fedviz] MLflow tracking URI : {mlflow_tracking_uri}")
+print(f"[fedviz] MLflow experiment   : {mlflow_experiment}")
 
 fedviz.init(
     algorithm = "FedAvg",
-    config    = dict(server_agent_config.server_configs),
+    config    = OmegaConf.to_container(server_agent_config.server_configs, resolve=True),
     emitters  = [
         WandbEmitter(project="my-fl-project-wandb"),
+        SSEEmitter(port=7070, serve_map=True),
         MLflowEmitter(
-            tracking_uri="http://localhost:5000",
-            experiment="my-fl-project-mlflow", 
-            mlflow_system_metrics=True, 
-            run_name="fedavg-run-1",
-            system_metrics_sampling_interval=5
+            tracking_uri                     = mlflow_tracking_uri,
+            experiment                       = mlflow_experiment,
+            mlflow_system_metrics            = True,
+            run_name                         = "fedavg-run-1",
+            system_metrics_sampling_interval = 5,
         ),
     ],
+)
+
+server_location = get_location()
+server_metadata = {
+    "host": socket.gethostname(),
+    "protocol": "gRPC / APPFL",
+    **server_location,
+}
+fedviz.set_server_metadata(**server_metadata)
+print(
+    "[fedviz/server] resolved server location "
+    f"{server_metadata.get('city', 'Unknown')}, {server_metadata.get('country', 'Unknown')} "
+    f"({server_metadata.get('lat')}, {server_metadata.get('lng')})"
 )
 
 server_agent = FedVizServerAgent(server_agent_config=server_agent_config)
@@ -85,12 +112,11 @@ communicator = GRPCServerCommunicator(
 try:
     serve(communicator, **server_agent_config.server_configs.comm_configs.grpc_configs)
 finally:
-    # Log the last round before finishing
     if server_agent._current_round >= 0:
         fedviz.log_round(
             round           = server_agent._current_round,
             global_accuracy = server_agent._last_accuracy,
             global_loss     = server_agent._last_loss,
         )
-    fedviz.finish()
 
+    fedviz.finish()

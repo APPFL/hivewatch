@@ -1,17 +1,17 @@
 # fedviz
 
-Framework-agnostic monitoring toolkit for federated and distributed ML training. 
+`fedviz` is a framework-agnostic monitoring toolkit for federated and distributed machine learning workloads. It provides a consistent interface for logging client updates, round summaries, and map-ready metadata across local experiments and larger deployments.
 
 ## Installation
 
-> 💡  `fedviz` requires `Python >= 3.8`
+`fedviz` requires Python 3.8 or later.
 
 ```bash
-pip install -e .                     # core only, zero dependencies
-pip install -e ".[wandb]"            # + W&B integration
-pip install -e ".[mlflow]"           # + MLflow integration
-pip install -e ".[wandb,mlflow]"     # both
-pip install -e ".[all]"              # everything
+pip install -e .                 # core package
+pip install -e ".[wandb]"        # Weights & Biases integration
+pip install -e ".[mlflow]"       # MLflow integration
+pip install -e ".[wandb,mlflow]" # both integrations
+pip install -e ".[all]"          # all optional dependencies
 ```
 
 ## Quickstart
@@ -21,19 +21,18 @@ import fedviz
 from fedviz.emitters import WandbEmitter
 
 fedviz.init(
-    algorithm = "FedAvg",
-    emitters  = [WandbEmitter(project="my-fl-project")],
+    algorithm="FedAvg",
+    emitters=[WandbEmitter(project="my-fl-project")],
 )
 
 for round_num in range(num_rounds):
     fedviz.round_start(round_num)
 
-    # your training loop — any framework
     for client_id, metadata in client_results.items():
         fedviz.log_client_update(
-            client_id=client_id, 
-            round=round_num, 
-            **metadata
+            client_id=client_id,
+            round=round_num,
+            **metadata,
         )
 
     fedviz.log_round(
@@ -47,171 +46,187 @@ fedviz.finish()
 
 ## Emitters
 
-`fedviz` uses a pluggable emitter system. Construct emitter instances and pass them to `init()`. You can use multiple emitters simultaneously.
+`fedviz` uses a pluggable emitter model. Create one or more emitters and pass them to `fedviz.init()` to send the same run data to multiple destinations.
 
-**Weights & Biases:**
+### Local map and deferred map metadata
+
+```python
+from fedviz.emitters import SSEEmitter
+
+fedviz.init(
+    algorithm="FedAvg",
+    emitters=[SSEEmitter(port=7070, serve_map=False)],
+)
+```
+
+`SSEEmitter` persists both of the following artifacts:
+
+- `runs/<run_id>.jsonl` for the complete event history
+- `runs/<run_id>.map.json` for map-ready metadata that can be loaded directly later
+
+Serve the dashboard separately:
+
+```bash
+hivewatch map run --runs-dir runs --port 7070
+```
+
+Open one specific saved run in static mode:
+
+```bash
+hivewatch map run --runs-dir runs --run-id run-abc123
+```
+
+The bundled `examples/fedviz_map.html` viewer loads map metadata first and falls back to the JSONL-derived event history for older runs. This keeps local development and later replay workflows compatible with the same viewer.
+
+### Package layout
+
+The source tree groups related functionality into focused areas:
+
+- `src/fedviz/map/`
+  - `metadata.py` for map metadata assembly and event-to-round transformations
+  - `server.py` for the local map/dashboard HTTP server
+- `src/fedviz/geo/`
+  - `utils.py` for client-side location resolution helpers
+
+This keeps map-related files together and avoids requiring users to maintain
+example-local geo helper files or server-side peer inspection patches.
+
+### Weights & Biases
 
 ```python
 from fedviz.emitters import WandbEmitter
 
 fedviz.init(
-    algorithm = "FedAvg",
-    emitters  = [WandbEmitter(project="my-fl-project")],
+    algorithm="FedAvg",
+    emitters=[WandbEmitter(project="my-fl-project")],
 )
 ```
 
-**MLflow:**
+### MLflow
+
 ```python
 from fedviz.emitters import MLflowEmitter
 
-# Local — logs to ./mlruns (MLflow default)
+# Local tracking directory (MLflow default)
 fedviz.init(emitters=[MLflowEmitter(experiment="my-fl-project")])
 
-# Remote server — start with: mlflow server --host 0.0.0.0 --port 5000
+# Remote tracking server
 fedviz.init(emitters=[MLflowEmitter(
-    tracking_uri = "http://localhost:5000",
-    experiment   = "my-fl-project",
+    tracking_uri="http://localhost:5000",
+    experiment="my-fl-project",
 )])
 
-# Enable MLflow's built-in server-side system metrics (CPU, RAM, GPU, disk, network)
-# sampled in the background and visible in the MLflow UI "System Metrics" tab
+# MLflow system metrics
 fedviz.init(emitters=[MLflowEmitter(
-    experiment             = "my-fl-project",
-    mlflow_system_metrics  = True,
-    system_metrics_sampling_interval = 5,  # seconds; default is 10
+    experiment="my-fl-project",
+    mlflow_system_metrics=True,
+    system_metrics_sampling_interval=5,
 )])
-
 ```
 
-**Starting the MLflow server:**
-```bash
-# Default — stores data in ./mlruns
-mlflow server --host 0.0.0.0 --port 5000
+Start an MLflow server:
 
-# Custom directory — stores data in ./my_custom_dir
+```bash
+mlflow server --host 0.0.0.0 --port 5000
+```
+
+To use a custom storage directory:
+
+```bash
 mlflow server \
   --host 0.0.0.0 \
   --port 5000 \
   --backend-store-uri ./my_custom_dir \
   --default-artifact-root ./my_custom_dir/artifacts
 ```
-Then open the dashboard at `http://localhost:5000`.
 
-**Both simultaneously:**
+The MLflow UI is then available at `http://localhost:5000`.
+
+### Multiple emitters
 
 ```python
-from fedviz.emitters import WandbEmitter, MLflowEmitter
+from fedviz.emitters import MLflowEmitter, WandbEmitter
 
 fedviz.init(
-    algorithm = "FedAvg",
-    emitters  = [
+    algorithm="FedAvg",
+    emitters=[
         WandbEmitter(project="my-fl-project"),
         MLflowEmitter(experiment="my-fl-project"),
     ],
 )
 ```
 
-**Custom emitter — implement these hooks:**
+### Custom emitters
 
 ```python
 class MyEmitter:
     def on_init(self, run_id, algorithm, config): ...
-    def on_round(self, summary, clients):         ...
-    def on_client_update(self, client):           ...
-    def finish(self):                             ...
+    def on_round(self, summary, clients): ...
+    def on_client_update(self, client): ...
+    def finish(self): ...
 
 fedviz.init(emitters=[MyEmitter()])
 ```
 
-## APPFL Integration
+## Metadata Contract
 
-fedviz works with APPFL by subclassing `ServerAgent` to intercept `global_update()`. No changes to client code are required for basic metrics. See `examples/appfl_server.py` for the full server script.
-
-```python
-from fedviz.emitters import WandbEmitter, MLflowEmitter
-
-fedviz.init(
-    algorithm = "FedAvg",
-    emitters  = [
-        WandbEmitter(project="my-fl-project"),
-        MLflowEmitter(experiment="my-fl-project"),
-    ],
-)
-
-class FedVizServerAgent(ServerAgent):
-    def global_update(self, client_id, local_model, *args, **kwargs):
-        round_num = kwargs.get("round", 0)
-        result = super().global_update(client_id, local_model, *args, **kwargs)
-        fedviz.log_client_update(
-            client_id      = client_id,
-            round          = round_num,
-            local_accuracy = kwargs.get("val_accuracy"),
-            local_loss     = kwargs.get("val_loss"),
-        )
-        return result
-```
-
-For richer communication metrics (bytes sent, gradient norm, CPU/RAM), add them to your client trainer's `get_parameters()` return metadata. See the metadata contract below.
-
-## Metadata contract
-
-`fedviz` defines what keys it understands. Clients fill what they have. Unknown keys are preserved and never dropped.
+`fedviz` defines the keys it understands, but it preserves unknown keys so applications can attach additional metadata without losing information.
 
 | Field | Type | Description |
 |---|---|---|
-| `client_id` | str | required |
-| `round` | int | current global round |
-| `local_accuracy` | float | accuracy after local training |
-| `local_loss` | float | loss after local training |
-| `num_samples` | int | local dataset size |
+| `client_id` | str | Client identifier |
+| `round` | int | Current global round |
+| `local_accuracy` | float | Accuracy after local training |
+| `local_loss` | float | Loss after local training |
+| `num_samples` | int | Local dataset size |
 | `gradient_norm` | float | L2 norm of local gradients |
-| `bytes_sent` | int | bytes uploaded to server |
-| `train_time_sec` | float | local training wall time |
-| `cpu_pct` | float | CPU utilisation % |
-| `ram_mb` | float | RAM usage in MB |
-| `gpu_util_pct` | float | GPU utilisation % |
-| `lat` / `lng` / `country` | float/str | client geo for map viz |
-| `base_round` | int | async FL — staleness = round - base_round |
+| `bytes_sent` | int | Bytes uploaded to the server |
+| `train_time_sec` | float | Local training wall-clock time |
+| `cpu_pct` | float | CPU utilization percentage |
+| `ram_mb` | float | Memory usage in MB |
+| `gpu_util_pct` | float | GPU utilization percentage |
+| `lat` / `lng` / `country` | float/str | Client location metadata for map visualization |
+| `base_round` | int | For asynchronous FL, staleness is `round - base_round` |
 
-## What gets logged
+## Logged Metrics
 
 ### Weights & Biases
 
 | Metric | Description |
 |---|---|
 | `round/accuracy`, `round/loss` | Global model performance per round |
-| `round/participation_rate` | Completed / selected clients |
-| `round/num_stragglers` | Straggler count |
-| `round/duration_sec` | Wall time per round |
-| `comm/total_bytes_mb` | Total upload + download volume |
+| `round/participation_rate` | Completed clients divided by selected clients |
+| `round/num_stragglers` | Number of stragglers |
+| `round/duration_sec` | Wall-clock time per round |
+| `comm/total_bytes_mb` | Total upload and download volume |
 | `comm/bytes_per_client_mb` | Per-client communication cost |
-| `agg/gradient_divergence` | Std dev of per-client gradient norms — non-IID signal |
-| `agg/aggregation_time_sec` | Server aggregation compute time |
+| `agg/gradient_divergence` | Standard deviation of per-client gradient norms |
+| `agg/aggregation_time_sec` | Server-side aggregation time |
 | `client/<id>/accuracy` | Per-client accuracy |
 | `client/<id>/gradient_norm` | Per-client gradient norm |
-| `client/<id>/staleness` | Async FL — rounds behind global model |
+| `client/<id>/staleness` | Rounds behind the current global model in async FL |
 | `client/<id>/bytes_sent_mb` | Per-client upload size |
 | `client/<id>/train_time_sec` | Per-client training time |
-| `sys/<id>/cpu_pct` | Per-client CPU utilisation |
+| `sys/<id>/cpu_pct` | Per-client CPU utilization |
 | `sys/<id>/ram_mb` | Per-client RAM usage |
 | `event/client_dropout` | Dropout counter |
 | `event/comm_failure` | Communication failure counter |
 
-All metrics use `round` as the x-axis via `wandb.define_metric()`.
+All metrics use `round` as the x-axis through `wandb.define_metric()`.
 
 ### MLflow
 
-Same metrics as above. Per-client metrics use dot notation (`client.<id>.accuracy`) instead of slash due to MLflow's key format. Hyperparameters are logged once as MLflow params. Model checkpoints are logged as versioned MLflow artifacts.
+MLflow records the same metrics. Per-client metrics use dot notation such as `client.<id>.accuracy` instead of slash notation because of MLflow metric naming conventions. Hyperparameters are logged once as MLflow parameters, and model checkpoints are stored as versioned MLflow artifacts.
 
 ## Architecture
 
-```
+```text
 FL Clients
   └── return metadata dict
-        │  (gRPC / HTTP / sockets / others — fedviz never touches the data transport)
+        │  (gRPC / HTTP / sockets / others; fedviz does not depend on the transport layer)
         ▼
 FL Server
-  └── receives metadata, calls fedviz:
+  └── receives metadata and calls fedviz:
         fedviz.round_start(round)
         fedviz.log_client_update(client_id, round, **metadata)
         fedviz.log_round(round, global_accuracy, global_loss)
@@ -222,21 +237,10 @@ fedviz
   └── MLflowEmitter →  MLflow UI (localhost:5000)
 ```
 
-fedviz never touches the transport layer or the framework. The user bridges their framework to fedviz the same way they would bridge it to W&B.
+`fedviz` does not depend on a specific transport layer or FL framework. Applications bridge their training framework to `fedviz` in the same way they would bridge it to another experiment tracking backend.
 
-## Project structure
+For map visualization, the storage contract includes a standalone metadata artifact in addition to the raw event log. This supports:
 
-```
-src/fedviz/
-  __init__.py          — public API (init, round_start, log_client_update, log_round, finish)
-  run.py               — FedVizRun class and init()
-  schema.py            — metadata contract (ClientUpdate, RoundSummary)
-  _state.py            — global singleton state
-  emitters/
-    __init__.py        — exports WandbEmitter, MLflowEmitter
-    wandb_emitter.py   — W&B integration
-    mlflow_emitter.py  — MLflow integration
-examples/
-  appfl_server.py      — APPFL + fedviz server
-  vanilla.py           — pure Python example
-```
+- local CLI runs that immediately launch or serve a map
+- local or remote services that persist metadata for later display
+- future deployments that store metadata in object storage and load it in a separate web tier
