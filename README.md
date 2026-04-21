@@ -168,40 +168,6 @@ class MyEmitter:
 fedviz.init(emitters=[MyEmitter()])
 ```
 
-## APPFL Integration
-
-fedviz works with APPFL by subclassing `ServerAgent` to intercept `global_update()`.
-The APPFL example resolves geo on each client and sends `lat`, `lng`, `city`,
-and `country` in the normal client metadata payload. The server simply logs
-those fields instead of trying to infer them from the transport layer.
-
-```python
-from fedviz.emitters import MLflowEmitter, WandbEmitter
-
-fedviz.init(
-    algorithm="FedAvg",
-    emitters=[
-        WandbEmitter(project="my-fl-project"),
-        MLflowEmitter(experiment="my-fl-project"),
-    ],
-)
-
-class FedVizServerAgent(ServerAgent):
-    def global_update(self, client_id, local_model, *args, **kwargs):
-        round_num = kwargs.get("round", 0)
-        result = super().global_update(client_id, local_model, *args, **kwargs)
-        fedviz.log_client_update(
-            client_id=client_id,
-            round=round_num,
-            local_accuracy=kwargs.get("val_accuracy"),
-            local_loss=kwargs.get("val_loss"),
-        )
-        return result
-```
-
-For richer communication metrics and map metadata, add them to your client
-trainer's `get_parameters()` return metadata. See the metadata contract below.
-
 ## Metadata Contract
 
 `fedviz` defines the keys it understands, but it preserves unknown keys so applications can attach additional metadata without losing information.
@@ -278,27 +244,3 @@ For map visualization, the storage contract includes a standalone metadata artif
 - local CLI runs that immediately launch or serve a map
 - local or remote services that persist metadata for later display
 - future deployments that store metadata in object storage and load it in a separate web tier
-
-## Project Structure
-
-```text
-src/fedviz/
-  __init__.py          public API (init, round_start, log_client_update, log_round, finish)
-  __main__.py          module entrypoint
-  _state.py            global singleton state
-  cli.py               hivewatch CLI
-  geo.py               geolocation utilities
-  map_metadata.py      map metadata assembly and replay helpers
-  map_server.py        local dashboard and map HTTP server
-  run.py               FedVizRun class and init()
-  schema.py            metadata contract (ClientUpdate, RoundSummary)
-  emitters/
-    __init__.py        emitter exports
-    sse_emitter.py     local SSE and map metadata emitter
-    wandb_emitter.py   Weights & Biases integration
-    mlflow_emitter.py  MLflow integration
-examples/
-  appfl/               APPFL example with server and client scripts
-  flwr-demo/           Flower integration example
-  fedviz_map.html      bundled local map viewer
-```

@@ -1,15 +1,7 @@
-from pathlib import Path
-import sys
-
-ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-import fedviz
-import argparse
 import os
 import socket
+import fedviz
+import argparse
 from omegaconf import OmegaConf
 from appfl.agent import ServerAgent
 from appfl.comm.grpc import GRPCServerCommunicator, serve
@@ -17,7 +9,6 @@ from fedviz.emitters import WandbEmitter, MLflowEmitter, SSEEmitter
 from fedviz.geo import get_location
 
 
-# ── FedViz Server Agent ───────────────────────────────────────────────────────
 class FedVizServerAgent(ServerAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,7 +19,7 @@ class FedVizServerAgent(ServerAgent):
     def global_update(self, client_id, local_model, *args, **kwargs):
         round_num = kwargs.get("round", 0)
 
-        # ── Log round transition ──────────────────────────────────────────────
+        # Log round transition
         if round_num != self._current_round:
             if self._current_round >= 0:
                 fedviz.log_round(
@@ -42,10 +33,10 @@ class FedVizServerAgent(ServerAgent):
         self._last_accuracy = kwargs.get("val_accuracy", 0.0)
         self._last_loss     = kwargs.get("val_loss",     0.0)
 
-        # ── Run aggregation ───────────────────────────────────────────────────
+        # Run aggregation
         result = super().global_update(client_id, local_model, *args, **kwargs)
 
-        # ── Log client update to fedviz ───────────────────────────────────────
+        # Log client update to fedviz
         fedviz.log_client_update(
             client_id      = client_id,
             round          = round_num,
@@ -65,7 +56,6 @@ class FedVizServerAgent(ServerAgent):
 
         return result
 
-# ── Main ──────────────────────────────────────────────────────────────────────
 argparser = argparse.ArgumentParser()
 argparser.add_argument(
     "--config",
@@ -122,7 +112,6 @@ communicator = GRPCServerCommunicator(
 try:
     serve(communicator, **server_agent_config.server_configs.comm_configs.grpc_configs)
 finally:
-    # ── Log final round ───────────────────────────────────────────────────────
     if server_agent._current_round >= 0:
         fedviz.log_round(
             round           = server_agent._current_round,

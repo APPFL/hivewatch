@@ -22,9 +22,9 @@ python run_server.py
 python run_server.py --config ./resources/configs/server_fedavg.yaml
 ```
 
-**Terminal 2 — map**
+**Terminal 2 — mlflow server**
 ```bash
-hivewatch map run --runs-dir runs --port 7070
+mlflow server --host 0.0.0.0 --port 5000
 ```
 
 **Terminal 3 — client 1**
@@ -60,11 +60,3 @@ fedviz.init(
 - **Map metadata + local viewer**: `SSEEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
 
 To use only one backend, remove the unwanted emitter from the list.
-
-
-## Source layout
-
-The APPFL example uses the package layout below:
-
-- `src/fedviz/map/` for map metadata and map server code
-- `src/fedviz/geo/` for client-side location resolution helpers
