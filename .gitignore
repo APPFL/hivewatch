@@ -14,3 +14,4 @@ mlruns/
 runs/
 *.db
 datasets/
+.vscode/

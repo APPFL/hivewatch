@@ -2,12 +2,13 @@ import argparse
 from omegaconf import OmegaConf
 from appfl.agent import ClientAgent
 from appfl.comm.grpc import GRPCClientCommunicator
+from fedviz.geo import get_location
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument(
     "--config",
     type=str,
-    default="./resources/configs/client_1.yaml",
+    default="./resources/configs/client_2.yaml",
     help="Path to the configuration file.",
 )
 args = argparser.parse_args()
@@ -33,6 +34,22 @@ client_communicator.invoke_custom_action(
     action="set_sample_size", sample_size=sample_size
 )
 
+location = get_location()
+client_geo = {
+    key: location.get(key)
+    for key in ("lat", "lng", "city", "country")
+    if location.get(key) is not None
+}
+
+if client_geo:
+    print(
+        "[fedviz/client] resolved location "
+        f"{client_geo.get('city', 'Unknown')}, {client_geo.get('country', 'Unknown')} "
+        f"({client_geo.get('lat')}, {client_geo.get('lng')})"
+    )
+else:
+    print("[fedviz/client] location resolution failed; sending training metrics without geo")
+
 while True:
     client_agent.train()
     local_model = client_agent.get_parameters()
@@ -40,6 +57,7 @@ while True:
         local_model, metadata = local_model[0], local_model[1]
     else:
         metadata = {}
+    metadata.update(client_geo)
     new_global_model, metadata = client_communicator.update_global_model(
         local_model, **metadata
     )
