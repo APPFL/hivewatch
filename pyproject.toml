@@ -26,3 +26,6 @@ testpaths = ["tests"]
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["fedviz*"]
+
+[tool.setuptools.package-data]
+"fedviz.map" = ["fedviz_map.html"]

@@ -87,11 +87,7 @@ class MapServer:
                 candidates = []
                 if server.map_path:
                     candidates.append(Path(server.map_path))
-                candidates += [
-                    Path("examples/fedviz_map.html"),
-                    Path("fedviz_map.html"),
-                    Path(__file__).parent.parent.parent.parent / "examples" / "fedviz_map.html",
-                ]
+                candidates.append(Path(__file__).parent / "fedviz_map.html")
                 for candidate in candidates:
                     if candidate.exists():
                         content = candidate.read_bytes()
@@ -101,7 +97,7 @@ class MapServer:
                         self.end_headers()
                         self.wfile.write(content)
                         return
-                self._serve_text("fedviz_map.html not found - place it in examples/", 404)
+                self._serve_text("fedviz_map.html not found", 404)
 
             def _serve_sse(self):
                 self.send_response(200)
