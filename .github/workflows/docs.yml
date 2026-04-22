@@ -1,49 +1,52 @@
 name: docs
 
 on:
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  docs:
-    timeout-minutes: 10
-
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
+          python-version: "3.11"
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - uses: actions/cache@v4
         with:
-          python-version: '3.11'
+          path: ~/.cache/pip
+          key: docs-pip-3.11-${{ hashFiles('pyproject.toml') }}
+          restore-keys: docs-pip-3.11-
 
-      - name: Get pip cache dir
-        id: pip-cache-dir
-        run: echo "PIP_CACHE_DIR=$(pip cache dir)" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: pip install ".[docs]"
 
-      - name: Use pip cache
-        id: pip-cache
-        uses: actions/cache@v5
+      - name: Build Sphinx docs
+        run: sphinx-build -b html docs docs/_build/html
+
+      - uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: docs-ubuntu-latest-pip-3.11-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            docs-ubuntu-latest-pip-3.11-
+          path: docs/_build/html
 
-      - name: Install Packages
-        run: |
-          pip install --upgrade setuptools pip
-          pip install .[docs]
-
-      - name: Configure git
-        run: |
-          git config --local user.name "GitHub Actions Bot"
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      - name: Deploy docs for main:latest to gh-pages branch
-        run: |
-          mike deploy --push --update-aliases main
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
