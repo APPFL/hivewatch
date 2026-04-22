@@ -136,7 +136,7 @@ class ClientUpdate:
         Build a ClientUpdate from any dict.
         Known keys are mapped; everything else goes into extra.
         This is the bridge between 'whatever your framework returns'
-        and 'what fedviz understands'.
+        and 'what hivewatch understands'.
         """
         known = {f for f in cls.__dataclass_fields__}
         kwargs = {k: v for k, v in d.items() if k in known and k != "extra"}
@@ -148,7 +148,7 @@ class ClientUpdate:
 class RoundSummary:
     """
     Server-side summary for one completed round.
-    Produced by the user after aggregation, passed to fedviz.log_round().
+    Produced by the user after aggregation, passed to hivewatch.log_round().
 
     Required:
         `round`           int

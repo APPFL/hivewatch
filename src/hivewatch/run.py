@@ -9,10 +9,10 @@ from typing import Dict, List, Optional
 from . import _state
 from .schema import ClientUpdate, RoundSummary, new_run_id
 
-logger = logging.getLogger("fedviz")
+logger = logging.getLogger("hivewatch")
 
 
-class FedVizRun:
+class HivewatchRun:
     """
     A single federated learning observability run.
 
@@ -20,14 +20,14 @@ class FedVizRun:
     metrics (gradient divergence, byte totals, round wall time), and fans
     events out to one or more emitter backends.
 
-    Prefer constructing via ``fedviz.init()`` rather than directly, which
+    Prefer constructing via ``hivewatch.init()`` rather than directly, which
     also registers the instance as the global singleton used by the
     module-level convenience functions.
 
     Can be used as a context manager — ``finish()`` is called automatically
     on exit::
 
-        with fedviz.init(...) as run:
+        with hivewatch.init(...) as run:
             for round in range(num_rounds):
                 run.round_start(round)
                 run.log_client_update(client_id, **metadata)
@@ -75,7 +75,7 @@ class FedVizRun:
                     try:
                         e.on_client_update(client)
                     except Exception as ex:
-                        logger.warning(f"[fedviz] emitter {type(e).__name__}.on_client_update failed: {ex}")
+                        logger.warning(f"[hivewatch] emitter {type(e).__name__}.on_client_update failed: {ex}")
 
     def log_round(
         self,
@@ -135,13 +135,13 @@ class FedVizRun:
                 try:
                     e.on_round(summary, clients)
                 except Exception as ex:
-                    logger.warning(f"[fedviz] emitter {type(e).__name__}.on_round failed: {ex}")
+                    logger.warning(f"[hivewatch] emitter {type(e).__name__}.on_round failed: {ex}")
 
         if self.verbose:
             acc_str  = f"{global_accuracy:.4f}" if global_accuracy is not None else "n/a"
             loss_str = f"{global_loss:.4f}"     if global_loss     is not None else "n/a"
             strag    = f"  stragglers={num_stragglers}" if num_stragglers else ""
-            print(f"[fedviz] round {round:>3}  acc={acc_str}  loss={loss_str}  clients={len(clients)}{strag}")
+            print(f"[hivewatch] round {round:>3}  acc={acc_str}  loss={loss_str}  clients={len(clients)}{strag}")
 
     def log_dropout(self, round: int, client_id: str, reason: Optional[str] = None):
         for e in self.emitters:
@@ -149,7 +149,7 @@ class FedVizRun:
                 try:
                     e.on_dropout(round, client_id, reason)
                 except Exception as ex:
-                    logger.warning(f"[fedviz] emitter on_dropout failed: {ex}")
+                    logger.warning(f"[hivewatch] emitter on_dropout failed: {ex}")
 
     def log_comm_failure(self, round: int, client_id: str, reason: Optional[str] = None):
         for e in self.emitters:
@@ -157,7 +157,7 @@ class FedVizRun:
                 try:
                     e.on_comm_failure(round, client_id, reason)
                 except Exception as ex:
-                    logger.warning(f"[fedviz] emitter on_comm_failure failed: {ex}")
+                    logger.warning(f"[hivewatch] emitter on_comm_failure failed: {ex}")
 
     def log_checkpoint(self, round: int, path: str, **metadata):
         for e in self.emitters:
@@ -165,7 +165,7 @@ class FedVizRun:
                 try:
                     e.on_checkpoint(round, path, metadata)
                 except Exception as ex:
-                    logger.warning(f"[fedviz] emitter on_checkpoint failed: {ex}")
+                    logger.warning(f"[hivewatch] emitter on_checkpoint failed: {ex}")
 
     def set_server_metadata(self, **metadata):
         for e in self.emitters:
@@ -173,7 +173,7 @@ class FedVizRun:
                 try:
                     e.on_server_metadata(metadata)
                 except Exception as ex:
-                    logger.warning(f"[fedviz] emitter on_server_metadata failed: {ex}")
+                    logger.warning(f"[hivewatch] emitter on_server_metadata failed: {ex}")
 
     def finish(self):
         for e in self.emitters:
@@ -181,9 +181,9 @@ class FedVizRun:
                 try:
                     e.finish()
                 except Exception as ex:
-                    logger.warning(f"[fedviz] emitter finish failed: {ex}")
+                    logger.warning(f"[hivewatch] emitter finish failed: {ex}")
         if self.verbose:
-            print(f"[fedviz] run {self.run_id} finished ✓")
+            print(f"[hivewatch] run {self.run_id} finished ✓")
 
     def __enter__(self):
         return self
@@ -199,9 +199,9 @@ def init(
     config:    Optional[dict] = None,
     emitters:  Optional[list] = None,
     verbose:   bool           = True,
-) -> FedVizRun:
+) -> HivewatchRun:
     """
-    Initialize a `fedviz` run. Call once via `with fedviz.init()` before your training loop.
+    Initialize a `hivewatch` run. Call once via `with hivewatch.init()` before your training loop.
 
     ``init()`` is now fully backend-agnostic. Construct emitter instances
     explicitly and pass them in. This keeps `init()` stable as new backends
@@ -213,9 +213,9 @@ def init(
     **Weights & Biases:**
 
     ```python
-    from fedviz.emitters import WandbEmitter
+    from hivewatch.emitters import WandbEmitter
 
-    fedviz.init(
+    hivewatch.init(
         algorithm = "FedAvg",
         emitters  = [WandbEmitter(project="my-fl-project")],
     )
@@ -224,24 +224,24 @@ def init(
     **MLflow:**
 
     ```python
-    from fedviz.emitters import MLflowEmitter
+    from hivewatch.emitters import MLflowEmitter
 
-    fedviz.init(
+    hivewatch.init(
         algorithm = "FedAvg",
-        emitters  = [MLflowEmitter(tracking_uri="http://localhost:5000", experiment="fedviz")],
+        emitters  = [MLflowEmitter(tracking_uri="http://localhost:5000", experiment="hivewatch")],
     )
     ```
 
     **Both at once:**
 
     ```python
-    from fedviz.emitters import WandbEmitter, MLflowEmitter
+    from hivewatch.emitters import WandbEmitter, MLflowEmitter
 
-    fedviz.init(
+    hivewatch.init(
         algorithm = "FedAvg",
         emitters  = [
             WandbEmitter(project="my-fl-project"),
-            MLflowEmitter(tracking_uri="http://localhost:5000", experiment="fedviz"),
+            MLflowEmitter(tracking_uri="http://localhost:5000", experiment="hivewatch"),
         ],
     )
     ```
@@ -250,13 +250,13 @@ def init(
 
     ```python
     import wandb
-    from fedviz.emitters import WandbEmitter
+    from hivewatch.emitters import WandbEmitter
 
     wandb.init(project="my-project")
-    fedviz.init(emitters=[WandbEmitter()])  # adopts the active run
+    hivewatch.init(emitters=[WandbEmitter()])  # adopts the active run
     ```
     """
-    _state._run = FedVizRun(
+    _state._run = HivewatchRun(
         run_id    = run_id or new_run_id(),
         algorithm = algorithm,
         config    = config or {},
@@ -266,8 +266,8 @@ def init(
 
     if verbose and _state._run.emitters:
         names = ", ".join(type(e).__name__ for e in _state._run.emitters)
-        print(f"[fedviz] run={_state._run.run_id}  algorithm={algorithm}  emitters=[{names}]")
+        print(f"[hivewatch] run={_state._run.run_id}  algorithm={algorithm}  emitters=[{names}]")
     elif verbose:
-        print(f"[fedviz] run={_state._run.run_id}  algorithm={algorithm}  no emitters")
+        print(f"[hivewatch] run={_state._run.run_id}  algorithm={algorithm}  no emitters")
 
     return _state._run

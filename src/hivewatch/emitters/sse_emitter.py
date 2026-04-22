@@ -1,15 +1,15 @@
 """
-fedviz.emitters.sse_emitter
+hivewatch.emitters.sse_emitter
 ────────────────────────────
 Starts a lightweight HTTP server that:
-  1. Streams live fedviz events to the map dashboard via SSE (GET /stream)
+  1. Streams live hivewatch events to the map dashboard via SSE (GET /stream)
   2. Persists every event to runs/<run_id>.jsonl for history replay
   3. Persists map-ready metadata to runs/<run_id>.map.json for deferred reloads
   4. Serves run history endpoints:
        GET /runs                    → list of all past runs
        GET /runs/<run_id>/events    → all events for a run (for replay)
        GET /runs/<run_id>/metadata  → map metadata for a run
-       GET /                        → serves fedviz_map.html
+       GET /                        → serves hivewatch_map.html
 
 Directory structure:
     runs/
@@ -30,12 +30,12 @@ from typing import List, Optional
 from ..map import MapServer, merge_client_state
 from ..schema import ClientUpdate, RoundSummary
 
-logger = logging.getLogger("fedviz.emitters.sse")
+logger = logging.getLogger("hivewatch.emitters.sse")
 
 
 class SSEEmitter:
     """
-    Emitter that broadcasts fedviz events over SSE and persists to JSONL files.
+    Emitter that broadcasts hivewatch events over SSE and persists to JSONL files.
     """
 
     def __init__(
@@ -43,7 +43,7 @@ class SSEEmitter:
         host:     str  = "0.0.0.0",
         port:     int  = 7070,
         runs_dir: str  = "runs",
-        map_path: Optional[str] = None,   # path to fedviz_map.html
+        map_path: Optional[str] = None,   # path to hivewatch_map.html
         serve_map: bool = True,
     ):
         self.host     = host
@@ -94,12 +94,12 @@ class SSEEmitter:
             self._start_server()
         self._broadcast(header)
 
-        print(f"[fedviz/sse] run={run_id}")
-        print(f"[fedviz/sse] history → {jsonl_path}")
+        print(f"[hivewatch/sse] run={run_id}")
+        print(f"[hivewatch/sse] history → {jsonl_path}")
         if self.serve_map:
-            print(f"[fedviz/sse] dashboard → http://localhost:{self.port}")
+            print(f"[hivewatch/sse] dashboard → http://localhost:{self.port}")
         else:
-            print(f"[fedviz/sse] dashboard disabled; run `hivewatch map run --runs-dir {self.runs_dir}` to serve the map")
+            print(f"[hivewatch/sse] dashboard disabled; run `hivewatch map run --runs-dir {self.runs_dir}` to serve the map")
 
     def on_round(self, summary: RoundSummary, clients: List[ClientUpdate]):
         payload = {

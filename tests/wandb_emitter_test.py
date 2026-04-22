@@ -4,8 +4,8 @@ import types
 
 import pytest
 
-from fedviz.emitters.wandb_emitter import WandbEmitter
-from fedviz.schema import ClientUpdate, RoundSummary
+from hivewatch.emitters.wandb_emitter import WandbEmitter
+from hivewatch.schema import ClientUpdate, RoundSummary
 
 
 class FakeArtifact:
@@ -109,26 +109,26 @@ def make_client(**overrides) -> ClientUpdate:
 
 def test_wandb_on_init_starts_run_and_registers_metric_namespaces(fake_wandb):
     emitter = WandbEmitter(
-        project="fedviz-project",
+        project="hivewatch-project",
         entity="team",
         tags=["mnist"],
         config={"lr": 0.1},
         mode="offline",
     )
 
-    emitter.on_init("fedviz-run", "FedAvg", {"epochs": 3})
+    emitter.on_init("hivewatch-run", "FedAvg", {"epochs": 3})
 
     assert fake_wandb.init_calls == [
         {
-            "project": "fedviz-project",
+            "project": "hivewatch-project",
             "entity": "team",
             "group": "FedAvg",
             "job_type": "federated-training",
-            "name": "fedviz-run",
+            "name": "hivewatch-run",
             "tags": ["mnist"],
             "config": {
-                "fedviz/run_id": "fedviz-run",
-                "fedviz/algorithm": "FedAvg",
+                "hivewatch/run_id": "hivewatch-run",
+                "hivewatch/algorithm": "FedAvg",
                 "epochs": 3,
                 "lr": 0.1,
             },
@@ -143,7 +143,7 @@ def test_wandb_on_init_adopts_existing_run(fake_wandb):
     fake_wandb.run = FakeRun()
     emitter = WandbEmitter()
 
-    emitter.on_init("fedviz-run", "FedAvg", {})
+    emitter.on_init("hivewatch-run", "FedAvg", {})
 
     assert fake_wandb.init_calls == []
     assert emitter._run is fake_wandb.run
@@ -151,7 +151,7 @@ def test_wandb_on_init_adopts_existing_run(fake_wandb):
 
 def test_wandb_on_round_logs_metrics_geo_and_finish_flushes_table(fake_wandb):
     emitter = WandbEmitter(log_geo=True)
-    emitter.on_init("fedviz-run", "FedAvg", {})
+    emitter.on_init("hivewatch-run", "FedAvg", {})
     client = make_client()
     summary = RoundSummary(
         round=5,
@@ -192,7 +192,7 @@ def test_wandb_on_round_logs_metrics_geo_and_finish_flushes_table(fake_wandb):
 
 def test_wandb_client_update_dropout_comm_failure_and_checkpoint(fake_wandb):
     emitter = WandbEmitter()
-    emitter.on_init("fedviz-run", "FedAvg", {})
+    emitter.on_init("hivewatch-run", "FedAvg", {})
 
     emitter.on_client_update(make_client(round=None))
     assert fake_wandb.log_calls == []

@@ -1,15 +1,15 @@
 import os
 import socket
-import fedviz
+import hivewatch
 import argparse
 from omegaconf import OmegaConf
 from appfl.agent import ServerAgent
 from appfl.comm.grpc import GRPCServerCommunicator, serve
-from fedviz.emitters import WandbEmitter, MLflowEmitter, SSEEmitter
-from fedviz.geo import get_location
+from hivewatch.emitters import WandbEmitter, MLflowEmitter, SSEEmitter
+from hivewatch.geo import get_location
 
 
-class FedVizServerAgent(ServerAgent):
+class HivewatchServerAgent(ServerAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._current_round = -1
@@ -22,13 +22,13 @@ class FedVizServerAgent(ServerAgent):
         # Log round transition
         if round_num != self._current_round:
             if self._current_round >= 0:
-                fedviz.log_round(
+                hivewatch.log_round(
                     round           = self._current_round,
                     global_accuracy = self._last_accuracy,
                     global_loss     = self._last_loss,
                 )
             self._current_round = round_num
-            fedviz.round_start(round_num)
+            hivewatch.round_start(round_num)
 
         self._last_accuracy = kwargs.get("val_accuracy", 0.0)
         self._last_loss     = kwargs.get("val_loss",     0.0)
@@ -36,8 +36,8 @@ class FedVizServerAgent(ServerAgent):
         # Run aggregation
         result = super().global_update(client_id, local_model, *args, **kwargs)
 
-        # Log client update to fedviz
-        fedviz.log_client_update(
+        # Log client update to hivewatch
+        hivewatch.log_client_update(
             client_id      = client_id,
             round          = round_num,
             local_accuracy = kwargs.get("val_accuracy"),
@@ -69,10 +69,10 @@ server_agent_config = OmegaConf.load(args.config)
 mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
 mlflow_experiment   = os.environ.get("MLFLOW_EXPERIMENT", "my-fl-project-mlflow")
 
-print(f"[fedviz] MLflow tracking URI : {mlflow_tracking_uri}")
-print(f"[fedviz] MLflow experiment   : {mlflow_experiment}")
+print(f"[hivewatch] MLflow tracking URI : {mlflow_tracking_uri}")
+print(f"[hivewatch] MLflow experiment   : {mlflow_experiment}")
 
-fedviz.init(
+hivewatch.init(
     algorithm = "FedAvg",
     config    = OmegaConf.to_container(server_agent_config.server_configs, resolve=True),
     emitters  = [
@@ -94,14 +94,14 @@ server_metadata = {
     "protocol": "gRPC / APPFL",
     **server_location,
 }
-fedviz.set_server_metadata(**server_metadata)
+hivewatch.set_server_metadata(**server_metadata)
 print(
-    "[fedviz/server] resolved server location "
+    "[hivewatch/server] resolved server location "
     f"{server_metadata.get('city', 'Unknown')}, {server_metadata.get('country', 'Unknown')} "
     f"({server_metadata.get('lat')}, {server_metadata.get('lng')})"
 )
 
-server_agent = FedVizServerAgent(server_agent_config=server_agent_config)
+server_agent = HivewatchServerAgent(server_agent_config=server_agent_config)
 
 communicator = GRPCServerCommunicator(
     server_agent,
@@ -113,10 +113,10 @@ try:
     serve(communicator, **server_agent_config.server_configs.comm_configs.grpc_configs)
 finally:
     if server_agent._current_round >= 0:
-        fedviz.log_round(
+        hivewatch.log_round(
             round           = server_agent._current_round,
             global_accuracy = server_agent._last_accuracy,
             global_loss     = server_agent._last_loss,
         )
 
-    fedviz.finish()
+    hivewatch.finish()

@@ -2,23 +2,23 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional
-from fedviz import ClientUpdate, RoundSummary
+from hivewatch import ClientUpdate, RoundSummary
 
-logger = logging.getLogger("fedviz.emitters.wandb")
+logger = logging.getLogger("hivewatch.emitters.wandb")
 
 _STATUS_INT = {"active": 0, "idle": 1, "dropped": 2, "failed": 3}
 
 
 class WandbEmitter:
     """
-    Emitter that logs fedviz events to Weights & Biases.
+    Emitter that logs hivewatch events to Weights & Biases.
 
     Usage
     -----
-        import fedviz
-        from fedviz.emitters import WandbEmitter
+        import hivewatch
+        from hivewatch.emitters import WandbEmitter
 
-        fedviz.init(
+        hivewatch.init(
             algorithm = "FedAvg",
             emitters  = [
                 WandbEmitter(project="my-fl-project"),
@@ -27,17 +27,17 @@ class WandbEmitter:
 
     Adopting an existing run
     ------------------------
-        # If your codebase already called wandb.init(), fedviz adopts
+        # If your codebase already called wandb.init(), hivewatch adopts
         # that run automatically — no duplicate run created.
         wandb.init(project="my-project")
-        fedviz.init(emitters=[WandbEmitter()])
+        hivewatch.init(emitters=[WandbEmitter()])
 
 
     """
 
     def __init__(
         self,
-        project:        str  = "fedviz",
+        project:        str  = "hivewatch",
         entity:         Optional[str] = None,
         group:          Optional[str] = None,
         job_type:       str  = "federated-training",
@@ -89,7 +89,7 @@ class WandbEmitter:
         # Adopt existing wandb run if user already called wandb.init()
         if self._w.run is not None:
             self._run = self._w.run
-            logger.info("[fedviz/wandb] adopted existing wandb run")
+            logger.info("[hivewatch/wandb] adopted existing wandb run")
         else:
             self._run = self._w.init(
                 project  = self.project,
@@ -98,7 +98,7 @@ class WandbEmitter:
                 job_type = self.job_type,
                 name     = run_id,
                 tags     = self.tags,
-                config   = {"fedviz/run_id": run_id, "fedviz/algorithm": algorithm, **config, **self.extra_config},
+                config   = {"hivewatch/run_id": run_id, "hivewatch/algorithm": algorithm, **config, **self.extra_config},
                 mode     = self.mode,
             )
         self._define_metrics()
@@ -180,7 +180,7 @@ class WandbEmitter:
             artifact.add_file(path)
             self._run.log_artifact(artifact)
         except Exception as e:
-            logger.warning(f"[fedviz/wandb] artifact upload failed: {e}")
+            logger.warning(f"[hivewatch/wandb] artifact upload failed: {e}")
         self._w.log({"round": round, "event/checkpoint": 1}, step=round)
 
     def finish(self):

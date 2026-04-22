@@ -1,15 +1,15 @@
-# `APPFL` + `fedviz` Example
+# `APPFL` + `hivewatch` Example
 
-This example runs a 2-client federated learning job using [APPFL](https://github.com/APPFL/APPFL) with FedAvg over gRPC, while logging training metrics and map metadata via **fedviz**.
+This example runs a 2-client federated learning job using [APPFL](https://github.com/APPFL/APPFL) with FedAvg over gRPC, while logging training metrics and map metadata via **hivewatch**.
 
 ## What the example does
 
-- **Server** (`run_server.py`): Subclasses APPFL's `ServerAgent`, intercepts each client update, and forwards metrics plus any client-supplied geo fields to fedviz. At startup it also resolves the server's own location and persists that metadata with the run so shared logs retain the original server marker. At the end of every round it logs aggregated round-level metrics. Uses `FedAvgAggregator` with 2 clients and runs for 10 global epochs.
+- **Server** (`run_server.py`): Subclasses APPFL's `ServerAgent`, intercepts each client update, and forwards metrics plus any client-supplied geo fields to hivewatch. At startup it also resolves the server's own location and persists that metadata with the run so shared logs retain the original server marker. At the end of every round it logs aggregated round-level metrics. Uses `FedAvgAggregator` with 2 clients and runs for 10 global epochs.
 - **Clients** (`run_client.py`): Standard APPFL clients. Each loads a partitioned (non-IID) split of MNIST, trains a small CNN locally with Adam, resolves its own location once, and pushes both training metadata and geo fields to the server over gRPC.
 
 ## Prerequisites
 
-Make sure you have `appfl` and `fedviz` installed, along with the required dependencies for this example (e.g. `wandb`, `mlflow`)
+Make sure you have `appfl` and `hivewatch` installed, along with the required dependencies for this example (e.g. `wandb`, `mlflow`)
 
 ## Running the example
 
@@ -44,7 +44,7 @@ Training finishes automatically after 10 global rounds. Results are written to `
 The server initializes three emitters in `run_server.py`:
 
 ```python
-fedviz.init(
+hivewatch.init(
     algorithm = "FedAvg",
     config    = dict(server_agent_config.server_configs),
     emitters  = [

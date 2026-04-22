@@ -17,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--port", type=int, default=7070, help="Port to bind")
     run_parser.add_argument("--runs-dir", default="runs", help="Directory containing *.jsonl/*.map.json")
     run_parser.add_argument("--run-id", default=None, help="Load a specific run (by ID or filename)")
-    run_parser.add_argument("--map-path", default=None, help="Optional path to fedviz_map.html")
+    run_parser.add_argument("--map-path", default=None, help="Optional path to hivewatch_map.html")
     run_parser.add_argument(
         "--poll-interval",
         type=float,
