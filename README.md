@@ -1,4 +1,5 @@
-# HiveWatch
+# HiveWatch: Framework-agnostic monitoring toolkit for federated and distributed ML
+
 
 <p align="center"><img src="docs/_static/logo.png" alt="hivewatch" width="640"/></p>
 
