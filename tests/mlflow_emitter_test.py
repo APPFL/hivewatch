@@ -5,8 +5,8 @@ import types
 
 import pytest
 
-from fedviz.emitters.mlflow_emitter import MLflowEmitter
-from fedviz.schema import ClientUpdate, RoundSummary
+from hivewatch.emitters.mlflow_emitter import MLflowEmitter
+from hivewatch.schema import ClientUpdate, RoundSummary
 
 
 class FakeMetric:
@@ -118,16 +118,16 @@ def test_mlflow_on_init_starts_new_run_and_logs_flattened_config(fake_mlflow):
         tags={"team": "research"},
     )
 
-    emitter.on_init("fedviz-run", "FedAvg", {"optimizer": {"lr": 0.1}, "epochs": 2})
+    emitter.on_init("hivewatch-run", "FedAvg", {"optimizer": {"lr": 0.1}, "epochs": 2})
 
     assert fake_mlflow.set_tracking_uri_calls == ["http://mlflow.local"]
     assert fake_mlflow.set_experiment_calls == ["exp-name"]
     assert fake_mlflow.start_run_calls == [
         {
-            "run_name": "fedviz-run",
+            "run_name": "hivewatch-run",
             "tags": {
-                "fedviz/run_id": "fedviz-run",
-                "fedviz/algorithm": "FedAvg",
+                "hivewatch/run_id": "hivewatch-run",
+                "hivewatch/algorithm": "FedAvg",
                 "team": "research",
             },
         }
@@ -145,7 +145,7 @@ def test_mlflow_on_init_can_resume_run_and_enable_system_metrics(fake_mlflow, mo
         system_metrics_sampling_interval=7,
     )
 
-    emitter.on_init("fedviz-run", "FedAvg", {"ignored": True})
+    emitter.on_init("hivewatch-run", "FedAvg", {"ignored": True})
 
     assert fake_mlflow.enable_system_metrics_logging_calls == 1
     assert os.environ["MLFLOW_SYSTEM_METRICS_SAMPLING_INTERVAL"] == "7"
@@ -157,7 +157,7 @@ def test_mlflow_on_init_can_resume_run_and_enable_system_metrics(fake_mlflow, mo
 
 def test_mlflow_on_round_logs_round_client_system_and_geo_metrics(fake_mlflow):
     emitter = MLflowEmitter(log_geo=True)
-    emitter.on_init("fedviz-run", "FedAvg", {})
+    emitter.on_init("hivewatch-run", "FedAvg", {})
     client = make_client()
     summary = RoundSummary(
         round=3,
@@ -195,7 +195,7 @@ def test_mlflow_on_round_logs_round_client_system_and_geo_metrics(fake_mlflow):
 
 def test_mlflow_client_update_checkpoint_and_finish(fake_mlflow):
     emitter = MLflowEmitter(log_geo=True)
-    emitter.on_init("fedviz-run", "FedAvg", {})
+    emitter.on_init("hivewatch-run", "FedAvg", {})
     emitter.on_client_update(make_client(round=None))
     assert fake_mlflow.client.log_batches == []
 

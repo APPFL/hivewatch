@@ -1,9 +1,9 @@
-# Tests for fedviz
+# Tests for hivewatch
 
 Test files should take the form `*_test.py` and tests inside files should be top-level functions named `test_*()`.
 
 Pytest discovers tests per file, so:
-- run_test.py covers FedVizRun behavior
+- run_test.py covers HivewatchRun behavior
 - mlflow_emitter_test.py covers MLflow emitter behavior
 - wandb_emitter_test.py covers W&B emitter behavior
 

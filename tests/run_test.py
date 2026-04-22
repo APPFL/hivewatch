@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-from fedviz.run import FedVizRun
+from hivewatch.run import HivewatchRun
 
 
 class RecorderEmitter:
@@ -25,9 +25,9 @@ class RecorderEmitter:
         self.finished += 1
 
 
-def test_fedviz_run_derives_round_metrics_from_client_updates():
+def test_hivewatch_run_derives_round_metrics_from_client_updates():
     emitter = RecorderEmitter()
-    run = FedVizRun(
+    run = HivewatchRun(
         run_id="run-1234",
         algorithm="FedAvg",
         config={"epochs": 2},

@@ -6,8 +6,8 @@ from flwr.common import Context, Metrics, ndarrays_to_parameters
 from flwr.server import ServerApp, ServerAppComponents, ServerConfig
 from flwr.server.strategy import FedAvg
 
-import fedviz
-from fedviz.emitters import WandbEmitter, MLflowEmitter
+import hivewatch
+from hivewatch.emitters import WandbEmitter, MLflowEmitter
 
 from demo.task import Net, get_weights
 
@@ -33,11 +33,11 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     }
 
 
-# ── FedViz strategy ───────────────────────────────────────────────────────────
+# ── HiveWatch strategy ───────────────────────────────────────────────────────────
 
-class FedVizStrategy(FedAvg):
+class HivewatchStrategy(FedAvg):
     """
-    FedAvg subclass that injects fedviz logging hooks.
+    FedAvg subclass that injects hivewatch logging hooks.
     All aggregation logic lives in FedAvg — we only add logging.
 
     Clients should return these keys in their fit() metrics dict:
@@ -50,12 +50,12 @@ class FedVizStrategy(FedAvg):
         # Log client dropouts
         for failure in failures:
             cid = failure[0].cid if isinstance(failure, tuple) else "unknown"
-            fedviz.log_dropout(server_round, cid, reason="fit failure")
+            hivewatch.log_dropout(server_round, cid, reason="fit failure")
 
         # Log per-client updates
         for proxy, fit_res in results:
             m = fit_res.metrics or {}
-            fedviz.log_client_update(
+            hivewatch.log_client_update(
                 client_id      = m.get("client_id", proxy.cid),
                 round          = server_round,
                 local_loss     = m.get("local_loss"),
@@ -79,7 +79,7 @@ class FedVizStrategy(FedAvg):
 
         if aggregated:
             loss, metrics = aggregated
-            fedviz.log_round(
+            hivewatch.log_round(
                 round           = server_round,
                 global_accuracy = float(metrics.get("accuracy", 0.0)),
                 global_loss     = float(loss) if loss else 0.0,
@@ -95,8 +95,8 @@ def server_fn(context: Context):
     num_rounds   = context.run_config["num-server-rounds"]
     fraction_fit = context.run_config["fraction-fit"]
 
-    # Init fedviz
-    fedviz.init(
+    # Init hivewatch
+    hivewatch.init(
         algorithm = "FedAvg",
         config    = dict(context.run_config),
         emitters  = [
@@ -117,7 +117,7 @@ def server_fn(context: Context):
     ndarrays   = get_weights(Net())
     parameters = ndarrays_to_parameters(ndarrays)
 
-    strategy = FedVizStrategy(
+    strategy = HivewatchStrategy(
         fraction_fit                    = fraction_fit,
         fraction_evaluate               = 1.0,
         min_available_clients           = 2,

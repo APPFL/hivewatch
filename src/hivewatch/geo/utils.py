@@ -27,7 +27,7 @@ def get_location(ip: str | None = None) -> dict:
             return location
     except Exception as exc:
         target = ip or "current client"
-        print(f"[fedviz/geo] Failed to resolve IP for {target}: {exc}")
+        print(f"[hivewatch/geo] Failed to resolve IP for {target}: {exc}")
     return {}
 
 

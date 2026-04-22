@@ -6,21 +6,21 @@ import logging
 from typing import Dict, List, Optional
 from ..schema import ClientUpdate, RoundSummary
 
-logger = logging.getLogger("fedviz.emitters.mlflow")
+logger = logging.getLogger("hivewatch.emitters.mlflow")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 
 class MLflowEmitter:
     """
-    Emitter that logs fedviz events to MLflow Tracking.
+    Emitter that logs hivewatch events to MLflow Tracking.
 
     Usage
     -----
-        import fedviz
-        from fedviz.emitters import MLflowEmitter
+        import hivewatch
+        from hivewatch.emitters import MLflowEmitter
 
-        fedviz.init(
+        hivewatch.init(
             algorithm = "FedAvg",
             emitters  = [
                 MLflowEmitter(
@@ -35,12 +35,12 @@ class MLflowEmitter:
     Adopting an existing run
     ------------------------
         # Auto-adopt: if your codebase already called mlflow.start_run(),
-        # fedviz will use that run automatically — no duplicate run created.
+        # hivewatch will use that run automatically — no duplicate run created.
         mlflow.start_run(experiment_id="123")
-        fedviz.init(emitters=[MLflowEmitter(tracking_uri="http://localhost:5000")])
+        hivewatch.init(emitters=[MLflowEmitter(tracking_uri="http://localhost:5000")])
 
         # Resume a specific past run by its MLflow run ID:
-        fedviz.init(emitters=[MLflowEmitter(
+        hivewatch.init(emitters=[MLflowEmitter(
             tracking_uri  = "http://localhost:5000",
             resume_run_id = "abc123def456",
         )])
@@ -60,7 +60,7 @@ class MLflowEmitter:
     def __init__(
         self,
         tracking_uri:                     Optional[str]           = None,  # None = local ./mlruns
-        experiment:                       str                      = "fedviz",
+        experiment:                       str                      = "hivewatch",
         run_name:                         Optional[str]            = None, # auto-set to run_id on init if None
         resume_run_id:                    Optional[str]            = None,
         tags:                             Optional[Dict[str, str]] = None,
@@ -73,10 +73,10 @@ class MLflowEmitter:
         """
         tracking_uri:   MLflow server URI. None = local ./mlruns.
         experiment:     Experiment name — created automatically if not found.
-        run_name:       Display name for this run. Defaults to fedviz run_id.
+        run_name:       Display name for this run. Defaults to hivewatch run_id.
         resume_run_id:  Resume a specific past run by its MLflow run ID.
                         If None and a run is already active in the process,
-                        fedviz adopts it automatically.
+                        hivewatch adopts it automatically.
         tags:           Dict of string tags e.g. {"dataset": "mnist"}.
         log_system:     Log per-client CPU/GPU/RAM under sys.<id>.*.
         log_per_client: Log per-client training metrics under client.<id>.*.
@@ -129,7 +129,7 @@ class MLflowEmitter:
             self._run = self._mlflow.start_run(run_id=self.resume_run_id)
             self._run_id = self._run.info.run_id
             self._client = self._mlflow.tracking.MlflowClient()
-            logger.info(f"[fedviz/mlflow] resumed run: {self.resume_run_id}")
+            logger.info(f"[hivewatch/mlflow] resumed run: {self.resume_run_id}")
             return
 
         # Priority 2: adopt whatever run is already active in the process
@@ -138,7 +138,7 @@ class MLflowEmitter:
             self._run    = active
             self._run_id = active.info.run_id
             self._client = self._mlflow.tracking.MlflowClient()
-            logger.info(f"[fedviz/mlflow] adopted existing run: {self._run_id}")
+            logger.info(f"[hivewatch/mlflow] adopted existing run: {self._run_id}")
             return
 
         # Priority 3: start a fresh run
@@ -146,8 +146,8 @@ class MLflowEmitter:
         self._run = self._mlflow.start_run(
             run_name = self.run_name or run_id,
             tags     = {
-                "fedviz/run_id":    run_id,
-                "fedviz/algorithm": algorithm,
+                "hivewatch/run_id":    run_id,
+                "hivewatch/algorithm": algorithm,
                 **self.tags,
             },
         )
@@ -160,7 +160,7 @@ class MLflowEmitter:
             self._mlflow.log_params(flat_config)
 
         if self.tracking_uri:
-            logger.info(f"[fedviz/mlflow] you can view this run at: {self.tracking_uri}/#/experiments/{self.experiment}/runs/{self._run_id}")
+            logger.info(f"[hivewatch/mlflow] you can view this run at: {self.tracking_uri}/#/experiments/{self.experiment}/runs/{self._run_id}")
 
     def on_round(self, summary: RoundSummary, clients: List[ClientUpdate]):
         step    = summary.round
@@ -236,9 +236,9 @@ class MLflowEmitter:
                 artifact_path=f"checkpoints/round_{round}"
             )
             self._log_metrics({"event/checkpoint": 1}, step=round)
-            logger.info(f"[fedviz/mlflow] checkpoint logged: {path}")
+            logger.info(f"[hivewatch/mlflow] checkpoint logged: {path}")
         except Exception as e:
-            logger.warning(f"[fedviz/mlflow] artifact upload failed: {e}")
+            logger.warning(f"[hivewatch/mlflow] artifact upload failed: {e}")
 
     def finish(self):
         if self._run is not None:

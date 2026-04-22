@@ -2,7 +2,7 @@ import argparse
 from omegaconf import OmegaConf
 from appfl.agent import ClientAgent
 from appfl.comm.grpc import GRPCClientCommunicator
-from fedviz.geo import get_location
+from hivewatch.geo import get_location
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument(
@@ -43,12 +43,12 @@ client_geo = {
 
 if client_geo:
     print(
-        "[fedviz/client] resolved location "
+        "[hivewatch/client] resolved location "
         f"{client_geo.get('city', 'Unknown')}, {client_geo.get('country', 'Unknown')} "
         f"({client_geo.get('lat')}, {client_geo.get('lng')})"
     )
 else:
-    print("[fedviz/client] location resolution failed; sending training metrics without geo")
+    print("[hivewatch/client] location resolution failed; sending training metrics without geo")
 
 while True:
     client_agent.train()

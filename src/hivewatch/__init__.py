@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import Optional
 
 from ._state import _r
-from .run import FedVizRun, init
+from .run import HivewatchRun, init
 from .schema import ClientUpdate, RoundSummary
 
 __version__ = "0.1.0"
 
 __all__ = [
-    "FedVizRun",
+    "HivewatchRun",
     "init",
     "round_start",
     "log_client_update",

@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 
 from .metadata import build_map_metadata_from_events
 
-logger = logging.getLogger("fedviz.map_server")
+logger = logging.getLogger("hivewatch.map_server")
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -87,7 +87,7 @@ class MapServer:
                 candidates = []
                 if server.map_path:
                     candidates.append(Path(server.map_path))
-                candidates.append(Path(__file__).parent / "fedviz_map.html")
+                candidates.append(Path(__file__).parent / "hivewatch_map.html")
                 for candidate in candidates:
                     if candidate.exists():
                         content = candidate.read_bytes()
@@ -97,7 +97,7 @@ class MapServer:
                         self.end_headers()
                         self.wfile.write(content)
                         return
-                self._serve_text("fedviz_map.html not found", 404)
+                self._serve_text("hivewatch_map.html not found", 404)
 
             def _serve_sse(self):
                 self.send_response(200)
@@ -138,7 +138,7 @@ class MapServer:
                                         self.wfile.write(f"data: {line}\n\n".encode("utf-8"))
                                         self.wfile.flush()
                             except Exception as exc:
-                                logger.warning("[fedviz] error reading events: %s", exc)
+                                logger.warning("[hivewatch] error reading events: %s", exc)
                         self.wfile.write(b"data: {\"event_type\": \"finished\"}\n\n")
                         self.wfile.flush()
                         return
@@ -187,7 +187,7 @@ class MapServer:
                                     }
                                 )
                     except Exception as exc:
-                        logger.warning("[fedviz/map] could not read %s: %s", jsonl_path, exc)
+                        logger.warning("[hivewatch/map] could not read %s: %s", jsonl_path, exc)
                 else:
                     for jsonl_path in sorted(
                         server.runs_dir.glob("*.jsonl"),
@@ -216,7 +216,7 @@ class MapServer:
                                 }
                             )
                         except Exception as exc:
-                            logger.warning("[fedviz/map] could not read %s: %s", jsonl_path, exc)
+                            logger.warning("[hivewatch/map] could not read %s: %s", jsonl_path, exc)
 
                 self._serve_json(runs)
 
@@ -235,7 +235,7 @@ class MapServer:
                             self._serve_json(json.load(handle))
                             return
                     except Exception as exc:
-                        logger.warning("[fedviz/map] could not read %s: %s", metadata_path, exc)
+                        logger.warning("[hivewatch/map] could not read %s: %s", metadata_path, exc)
 
                 jsonl_path = server.runs_dir / f"{run_id}.jsonl"
                 if not jsonl_path.exists():

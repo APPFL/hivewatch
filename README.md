@@ -1,10 +1,12 @@
-# fedviz
+# HiveWatch
 
-`fedviz` is a framework-agnostic monitoring toolkit for federated and distributed machine learning workloads. It provides a consistent interface for logging client updates, round summaries, and map-ready metadata across local experiments and larger deployments.
+<p align="center"><img src="docs/_static/logo.png" alt="hivewatch" width="640"/></p>
+
+`hivewatch` is a framework-agnostic monitoring toolkit for federated and distributed machine learning workloads. It provides a consistent interface for logging client updates, round summaries, and map-ready metadata across local experiments and larger deployments.
 
 ## Installation
 
-`fedviz` requires Python 3.8 or later.
+`hivewatch` requires Python 3.8 or later.
 
 ```bash
 pip install -e .                 # core package
@@ -17,43 +19,43 @@ pip install -e ".[all]"          # all optional dependencies
 ## Quickstart
 
 ```python
-import fedviz
-from fedviz.emitters import WandbEmitter
+import hivewatch
+from hivewatch.emitters import WandbEmitter
 
-fedviz.init(
+hivewatch.init(
     algorithm="FedAvg",
     emitters=[WandbEmitter(project="my-fl-project")],
 )
 
 for round_num in range(num_rounds):
-    fedviz.round_start(round_num)
+    hivewatch.round_start(round_num)
 
     for client_id, metadata in client_results.items():
-        fedviz.log_client_update(
+        hivewatch.log_client_update(
             client_id=client_id,
             round=round_num,
             **metadata,
         )
 
-    fedviz.log_round(
+    hivewatch.log_round(
         round=round_num,
         global_accuracy=agg_accuracy,
         global_loss=agg_loss,
     )
 
-fedviz.finish()
+hivewatch.finish()
 ```
 
 ## Emitters
 
-`fedviz` uses a pluggable emitter model. Create one or more emitters and pass them to `fedviz.init()` to send the same run data to multiple destinations.
+`hivewatch` uses a pluggable emitter model. Create one or more emitters and pass them to `hivewatch.init()` to send the same run data to multiple destinations.
 
 ### Local map and deferred map metadata
 
 ```python
-from fedviz.emitters import SSEEmitter
+from hivewatch.emitters import SSEEmitter
 
-fedviz.init(
+hivewatch.init(
     algorithm="FedAvg",
     emitters=[SSEEmitter(port=7070, serve_map=False)],
 )
@@ -76,16 +78,16 @@ Open one specific saved run in static mode:
 hivewatch map run --runs-dir runs --run-id run-abc123
 ```
 
-The bundled `examples/fedviz_map.html` viewer loads map metadata first and falls back to the JSONL-derived event history for older runs. This keeps local development and later replay workflows compatible with the same viewer.
+The bundled `examples/hivewatch_map.html` viewer loads map metadata first and falls back to the JSONL-derived event history for older runs. This keeps local development and later replay workflows compatible with the same viewer.
 
 ### Package layout
 
 The source tree groups related functionality into focused areas:
 
-- `src/fedviz/map/`
+- `src/hivewatch/map/`
   - `metadata.py` for map metadata assembly and event-to-round transformations
   - `server.py` for the local map/dashboard HTTP server
-- `src/fedviz/geo/`
+- `src/hivewatch/geo/`
   - `utils.py` for client-side location resolution helpers
 
 This keeps map-related files together and avoids requiring users to maintain
@@ -94,9 +96,9 @@ example-local geo helper files or server-side peer inspection patches.
 ### Weights & Biases
 
 ```python
-from fedviz.emitters import WandbEmitter
+from hivewatch.emitters import WandbEmitter
 
-fedviz.init(
+hivewatch.init(
     algorithm="FedAvg",
     emitters=[WandbEmitter(project="my-fl-project")],
 )
@@ -105,19 +107,19 @@ fedviz.init(
 ### MLflow
 
 ```python
-from fedviz.emitters import MLflowEmitter
+from hivewatch.emitters import MLflowEmitter
 
 # Local tracking directory (MLflow default)
-fedviz.init(emitters=[MLflowEmitter(experiment="my-fl-project")])
+hivewatch.init(emitters=[MLflowEmitter(experiment="my-fl-project")])
 
 # Remote tracking server
-fedviz.init(emitters=[MLflowEmitter(
+hivewatch.init(emitters=[MLflowEmitter(
     tracking_uri="http://localhost:5000",
     experiment="my-fl-project",
 )])
 
 # MLflow system metrics
-fedviz.init(emitters=[MLflowEmitter(
+hivewatch.init(emitters=[MLflowEmitter(
     experiment="my-fl-project",
     mlflow_system_metrics=True,
     system_metrics_sampling_interval=5,
@@ -145,9 +147,9 @@ The MLflow UI is then available at `http://localhost:5000`.
 ### Multiple emitters
 
 ```python
-from fedviz.emitters import MLflowEmitter, WandbEmitter
+from hivewatch.emitters import MLflowEmitter, WandbEmitter
 
-fedviz.init(
+hivewatch.init(
     algorithm="FedAvg",
     emitters=[
         WandbEmitter(project="my-fl-project"),
@@ -165,12 +167,12 @@ class MyEmitter:
     def on_client_update(self, client): ...
     def finish(self): ...
 
-fedviz.init(emitters=[MyEmitter()])
+hivewatch.init(emitters=[MyEmitter()])
 ```
 
 ## Metadata Contract
 
-`fedviz` defines the keys it understands, but it preserves unknown keys so applications can attach additional metadata without losing information.
+`hivewatch` defines the keys it understands, but it preserves unknown keys so applications can attach additional metadata without losing information.
 
 | Field | Type | Description |
 |---|---|---|
@@ -223,21 +225,21 @@ MLflow records the same metrics. Per-client metrics use dot notation such as `cl
 ```text
 FL Clients
   └── return metadata dict
-        │  (gRPC / HTTP / sockets / others; fedviz does not depend on the transport layer)
+        │  (gRPC / HTTP / sockets / others; hivewatch does not depend on the transport layer)
         ▼
 FL Server
-  └── receives metadata and calls fedviz:
-        fedviz.round_start(round)
-        fedviz.log_client_update(client_id, round, **metadata)
-        fedviz.log_round(round, global_accuracy, global_loss)
+  └── receives metadata and calls hivewatch:
+        hivewatch.round_start(round)
+        hivewatch.log_client_update(client_id, round, **metadata)
+        hivewatch.log_round(round, global_accuracy, global_loss)
         │
         ▼
-fedviz
+hivewatch
   ├── WandbEmitter  →  wandb.ai dashboard
   └── MLflowEmitter →  MLflow UI (localhost:5000)
 ```
 
-`fedviz` does not depend on a specific transport layer or FL framework. Applications bridge their training framework to `fedviz` in the same way they would bridge it to another experiment tracking backend.
+`hivewatch` does not depend on a specific transport layer or FL framework. Applications bridge their training framework to `hivewatch` in the same way they would bridge it to another experiment tracking backend.
 
 For map visualization, the storage contract includes a standalone metadata artifact in addition to the raw event log. This supports:
 
