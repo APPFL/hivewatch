@@ -1,7 +1,6 @@
-# HiveWatch: Framework-agnostic monitoring toolkit for federated and distributed ML
+# HiveWatch
 
-
-<p align="center"><img src="docs/_static/logo.png" alt="hivewatch" width="640"/></p>
+<p align="center"><img src="https://raw.githubusercontent.com/APPFL/hivewatch/main/docs/_static/logo.png" alt="hivewatch" width="640"/></p>
 
 `hivewatch` is a framework-agnostic monitoring toolkit for federated and distributed machine learning workloads. It provides a consistent interface for logging client updates, round summaries, and map-ready metadata across local experiments and larger deployments.
 
