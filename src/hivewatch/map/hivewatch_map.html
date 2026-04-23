@@ -700,6 +700,14 @@ function handleLiveEvent(msg) {
   const type = msg.event_type;
   dbg("connected", type);
   if (type === "ping" || type === "connected") return;
+  if (type !== "init") {
+    pb.events.push(msg);
+    pb.rounds = buildRounds(pb.events);
+    state.totalRounds = pb.rounds.length;
+    document.getElementById("play-btn").disabled = pb.rounds.length === 0 || state.mode === "live";
+    buildRoundTicks();
+    updateProgress();
+  }
 
   if (type === "server_metadata") {
     applyServerMetadata(msg.server);
@@ -1058,6 +1066,8 @@ function connect() {
         if (msg.mode === "live") {
           setMode("live");
           state.staticLoaded = false;
+          pb.events = [];
+          pb.rounds = [];
           addLog(`Live run started: ${msg.run_id}`, "round");
         } else {
           setMode("playback");
