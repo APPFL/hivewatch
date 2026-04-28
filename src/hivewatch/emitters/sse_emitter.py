@@ -20,6 +20,7 @@ Directory structure:
 """
 from __future__ import annotations
 
+import errno
 import json
 import logging
 import threading
@@ -96,8 +97,10 @@ class SSEEmitter:
 
         print(f"[hivewatch/sse] run={run_id}")
         print(f"[hivewatch/sse] history → {jsonl_path}")
-        if self.serve_map:
+        if self._server is not None:
             print(f"[hivewatch/sse] dashboard → http://localhost:{self.port}")
+        elif self.serve_map:
+            print(f"[hivewatch/sse] port {self.port} already in use — using existing server at http://localhost:{self.port}")
         else:
             print(f"[hivewatch/sse] dashboard disabled; run `hivewatch map run --runs-dir {self.runs_dir}` to serve the map")
 
@@ -286,7 +289,20 @@ class SSEEmitter:
             map_path=self.map_path,
             watch=False,
         )
-        self._server.start()
+        try:
+            self._server.start()
+        except OSError as exc:
+            if exc.errno == errno.EADDRINUSE:
+                logger.warning(
+                    "[hivewatch/sse] port %d already in use — skipping embedded map server. "
+                    "Run data is still persisted; the existing server at http://localhost:%d "
+                    "will serve this run's history once it completes.",
+                    self.port,
+                    self.port,
+                )
+                self._server = None
+            else:
+                raise
 
     # ── Client dict ───────────────────────────────────────────────────────────
 
