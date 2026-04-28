@@ -44,6 +44,7 @@ class MapServer:
         self._watch_thread: Optional[threading.Thread] = None
         self._seen_offsets: Dict[Path, int] = {}
         self._live_run_id: Optional[str] = run_id
+        self._fixed_run_id = run_id is not None
 
         self.runs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -111,12 +112,12 @@ class MapServer:
                 self.wfile.flush()
 
                 if server._live_run_id:
-                    mode = "live" if server.watch else "static"
+                    mode = "static" if server._fixed_run_id else "live"
                     msg = json.dumps({"event_type": "init", "run_id": server._live_run_id, "mode": mode})
                     self.wfile.write(f"data: {msg}\n\n".encode("utf-8"))
                     self.wfile.flush()
 
-                    if not server.watch:
+                    if server._fixed_run_id:
                         jsonl_path = server.runs_dir / f"{server._live_run_id}.jsonl"
                         if jsonl_path.exists():
                             try:
@@ -249,6 +250,8 @@ class MapServer:
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+                self.send_header("Pragma", "no-cache")
                 self._cors()
                 self.end_headers()
                 self.wfile.write(body)
@@ -257,6 +260,8 @@ class MapServer:
                 body = text.encode("utf-8")
                 self.send_response(code)
                 self.send_header("Content-Type", "text/plain")
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+                self.send_header("Pragma", "no-cache")
                 self._cors()
                 self.end_headers()
                 self.wfile.write(body)
@@ -312,3 +317,16 @@ class MapServer:
                 self._subscribers.remove(q)
             except ValueError:
                 pass
+
+    def read_events(self, jsonl_path: Path) -> List[dict]:
+        events = []
+        with jsonl_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    events.append(json.loads(line))
+                except json.JSONDecodeError as exc:
+                    logger.warning("[hivewatch/map] could not parse %s: %s", jsonl_path, exc)
+        return events
