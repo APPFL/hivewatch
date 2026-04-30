@@ -123,18 +123,6 @@ HiveWatch plus cross-site evaluation:
 python job.py --hivewatch --cross_site_eval
 ```
 
-## What to Expect
-
-With `--hivewatch` enabled:
-
-- NVFLARE still performs the federated training
-- HiveWatch creates one server-side run
-- each client result is logged into that run
-- round summaries are emitted to:
-  - Weights & Biases
-  - MLflow
-  - local SSE/map UI
-
 ## Notes
 
 - This example still uses CIFAR-10 for all clients, so it is an integration
