@@ -64,20 +64,8 @@ The client remains a standard NVFLARE client script, but with a few additions:
 - protects CIFAR-10 download with a file lock so multiple local clients do not
   corrupt the shared dataset cache
 
-## If You Want to Apply This to Another NVFLARE App
 
-These are the extra changes you need beyond a normal NVFLARE example:
 
-1. Add `hivewatch` as a dependency in the environment running both server and clients.
-2. On the client side, include the metrics you want in `FLModel.metrics`.
-3. If you want the map UI, collect `lat`/`lng`/`city`/`country` on the client.
-4. On the server side, wrap or subclass the workflow/controller so you can call:
-   - `hivewatch.init(...)`
-   - `hivewatch.round_start(...)`
-   - `hivewatch.log_client_update(...)`
-   - `hivewatch.log_round(...)`
-   - `hivewatch.finish()`
-5. Configure emitters for the backends you want to test.
 
 ## Install
 
