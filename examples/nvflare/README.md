@@ -1,212 +1,156 @@
+# HiveWatch Integration for NVFLARE `hello-pt`
 
-# Hello PyTorch
-This example demonstrates how to use NVIDIA FLARE with PyTorch to train an image classifier using federated averaging (FedAvg). The complete example code can be found in the `hello-pt directory <examples/hello-world/hello-pt/>`. It is recommended to create a virtual environment and run everything within a virtualenv.
+This example shows the minimal code
+changes needed to integrate `hivewatch` into NVFLARE's upstream
+`examples/hello-world/hello-pt` PyTorch example.
 
-## NVIDIA FLARE Installation
-For the complete installation instructions, see [Installation](https://nvflare.readthedocs.io/en/main/installation.html)
+The original FL workflow still comes from NVFLARE:
+
+- `FedAvgRecipe` builds the job
+- NVFLARE runs the server-side FedAvg workflow
+- `client.py` performs local PyTorch training
+
+The HiveWatch-specific work in this directory adds:
+
+- server-side `hivewatch.init(...)`
+- per-round `hivewatch.round_start(...)`
+- per-client `hivewatch.log_client_update(...)`
+- per-round aggregate `hivewatch.log_round(...)`
+- run shutdown with `hivewatch.finish()`
+- client geo metadata for the map UI
+- emitters for W&B, MLflow, and SSE/map replay
+
+## Files
+
+```text
+nvflare/
+|-- README.md
+|-- job.py            # NVFLARE recipe + HiveWatch FedAvg wrapper
+|-- client.py         # NVFLARE client training script with HiveWatch metrics
+|-- model.py          # PyTorch CNN
+|-- requirements.txt  # extra runtime deps for this example
 ```
+
+## What Changed
+
+### `job.py`
+
+This file adds a `HiveWatchFedAvg` class that subclasses NVFLARE's
+`FedAvg` workflow and injects HiveWatch calls into the server lifecycle.
+
+The integration points are:
+
+- `run()`
+  Initializes HiveWatch, creates emitters, records server metadata, and
+  finishes the run when training ends.
+- `send_model()`
+  Marks the start of a round with `hivewatch.round_start(...)`.
+- `_aggregate_one_result()`
+  Logs client-level metrics into the shared HiveWatch run.
+- `_get_aggregated_result()`
+  Logs aggregated round metrics after server-side reduction.
+- `enable_hivewatch(...)`
+  Replaces NVFLARE's default `FedAvg` controller inside the recipe with the
+  HiveWatch-aware subclass.
+
+### `client.py`
+
+The client remains a standard NVFLARE client script, but with a few additions:
+
+- resolves client location with `hivewatch.geo.get_location()`
+- reports local metrics in `FLModel.metrics`
+- keeps `local_accuracy`, `local_loss`, `num_samples`, and `train_time_sec`
+  so the server wrapper can forward them to HiveWatch
+- protects CIFAR-10 download with a file lock so multiple local clients do not
+  corrupt the shared dataset cache
+
+## If You Want to Apply This to Another NVFLARE App
+
+These are the extra changes you need beyond a normal NVFLARE example:
+
+1. Add `hivewatch` as a dependency in the environment running both server and clients.
+2. On the client side, include the metrics you want in `FLModel.metrics`.
+3. If you want the map UI, collect `lat`/`lng`/`city`/`country` on the client.
+4. On the server side, wrap or subclass the workflow/controller so you can call:
+   - `hivewatch.init(...)`
+   - `hivewatch.round_start(...)`
+   - `hivewatch.log_client_update(...)`
+   - `hivewatch.log_round(...)`
+   - `hivewatch.finish()`
+5. Configure emitters for the backends you want to test.
+
+## Install
+
+From the repository root:
+
+```bash
+pip install -e ".[wandb,mlflow]"
 pip install nvflare
-
-```
-Install the dependency
-
-```
-pip install -r requirements.txt
-```
-## Code Structure
-First get the example code from github:
-
-```
-git clone https://github.com/NVIDIA/NVFlare.git
-```
-Then navigate to the hello-pt directory:
-
-```
-git switch <release branch>
-cd examples/hello-world/hello-pt
-```
-``` bash
-hello-pt
-|
-|-- client.py             # client local training script
-|-- model.py              # model definition
-|-- job.py                # job recipe that defines client and server configurations
-|-- requirements.txt      # dependencies
+pip install -r examples/nvflare/requirements.txt
 ```
 
-## Data
-This example uses the [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) dataset
+## Runtime Configuration
 
-In a real FL experiment, each client would have their own dataset used for their local training.
-You can download the CIFAR10 dataset from the Internet via torchvision’s datasets module,
-You can split the datasets for different clients, so that each client has its own dataset.
-Here, for simplicity's sake, we will be using the same dataset on each client.
+This example can emit to three backends:
 
-## Model
-In PyTorch, neural networks are implemented by defining a class (e.g., SimpleNetwork) that extends `nn.Module`.
-The network’s architecture is set up in the __init__ method, while the forward method determines how input data flows
-through the layers. For faster computations, the model is transferred to a hardware accelerator (such as NVIDIA GPUs) if available; otherwise, it runs on the CPU. The implementation of this model can be found in [model.py](model.py).
+- `WandbEmitter`
+- `MLflowEmitter`
+- `SSEEmitter`
 
-```python
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+Environment variables used by `job.py`:
 
-class SimpleNetwork(nn.Module):
-    def __init__(self):
-        super(SimpleNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)  # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+```bash
+export WANDB_PROJECT=hivewatch-nvflare-hello-pt
+export MLFLOW_TRACKING_URI=http://localhost:5000
+export MLFLOW_EXPERIMENT=hivewatch-nvflare-hello-pt
+export HIVEWATCH_RUN_NAME=nvflare-hello-pt
+export HIVEWATCH_PORT=7070
 ```
 
+Important:
 
-## Client Code
-The client code ```client.py``` is responsible for model training. Notice that the training code is almost identical to the standard PyTorch training code.
-The only difference is that we added a few lines to receive and send data to the server.
+- If `wandb` is enabled, you must also run `wandb login` or set `WANDB_API_KEY`.
+- `MLFLOW_TRACKING_URI` must point to a running MLflow server.
+- The map UI is served by `SSEEmitter` on `http://localhost:${HIVEWATCH_PORT}`.
 
-Now, we need to adapt this centralized training code to something that can run in a federated setting.
+## Run
 
-On the client side, the training workflow is as follows:
-1. Receive the model from the FL server.
-2. Perform local training on the received global model and/or evaluate the received global model for model selection.
-3. Send the new model back to the FL server.
+This directory currently runs the example in NVFLARE simulation mode.
 
-Using NVFlare's client API, we can easily adapt machine learning code that was written for centralized training and apply it in a federated scenario.
-For a general use case, there are three essential methods to achieve this using the Client API :
-- `init()`: Initializes NVFlare Client API environment.
-- `receive()`: Receives model from the FL server.
-- `send()`: Sends the model to the FL server.
-With these simple methods, the developers can use the Client API
-to change their centralized training code to an FL scenario with
-five lines of code changes as shown below.
+Plain NVFLARE run:
 
-```
-import nvflare.client as flare
-
-flare.init() # 1. Initializes NVFlare Client API environment.
-input_model = flare.receive() # 2. Receives model from the FL server.
-params = input_model.params # 3. Obtain the required information from the received model.
-
-# original local training code
-new_params = local_train(params)
-
-output_model = flare.FLModel(params=new_params) # 4. Put the results in a new `FLModel`
-flare.send(output_model) # 5. Sends the model to the FL server.
+```bash
+python job.py
 ```
 
-## Server-Side Workflow
+HiveWatch-enabled run:
 
-This example uses the [`FedAvgRecipe`](https://nvflare.readthedocs.io/en/main/apidocs/nvflare.app_opt.pt.recipes.fedavg.html), which implements the [FedAvg](https://proceedings.mlr.press/v54/mcmahan17a?ref=https://githubhelp.com) algorithm. The Recipe API handles all server-side logic automatically:
-
-1. Initialize the global model
-2. For each training round:
-   - Sample available clients
-   - Send the global model to selected clients
-   - Wait for client updates
-   - Aggregate client models into a new global model
-
-With the Recipe API, **there is no need to write custom server code**. The federated averaging workflow is provided by NVFlare using the `ScatterAndGather` controller.
-
-## Job Recipe Code
-
-The `FedAvgRecipe` combines the client training script [`client.py`](client.py) with the built-in federated averaging algorithm:
-```python
-recipe = FedAvgRecipe(
-    name="hello-pt",
-    min_clients=n_clients,
-    num_rounds=num_rounds,
-    model=SimpleNetwork(),
-    train_script="client.py",
-    train_args=f"--batch_size {batch_size}",
-)
-
-env = SimEnv(num_clients=n_clients, num_threads=n_clients)
-recipe.execute(env=env)
+```bash
+python job.py --hivewatch
 ```
 
-### Model Input Options
+HiveWatch plus cross-site evaluation:
 
-The `model` parameter accepts two formats:
-
-1. **Class instance** (shown above): `model=SimpleNetwork()` - Convenient and Pythonic
-2. **Dict config**: `model={"class_path": "model.SimpleNetwork", "args": {}}` - Better for large models
-
-> **Note:** Class instances are converted to configuration files before job submission. For large models, use dict config to avoid unnecessary instantiation overhead.
-
-### Pre-trained Checkpoint
-
-To resume training from pre-trained weights, use the `initial_ckpt` parameter:
-
-```python
-recipe = FedAvgRecipe(
-    model=SimpleNetwork(),
-    initial_ckpt="/server/path/to/pretrained.pt",  # Absolute path, must exist on server
-    ...
-)
+```bash
+python job.py --hivewatch --cross_site_eval
 ```
 
-> **Note:** The checkpoint path must be absolute and point to where the file exists on the server (not necessarily on your local machine).
+## What to Expect
 
-To include cross-site evaluation after training, use the `--cross_site_eval` flag (see command below). This adds the `CrossSiteModelEval` controller to evaluate trained models across all client sites.
+With `--hivewatch` enabled:
 
-## Run Job
-From the terminal, run:
+- NVFLARE still performs the federated training
+- HiveWatch creates one server-side run
+- each client result is logged into that run
+- round summaries are emitted to:
+  - Weights & Biases
+  - MLflow
+  - local SSE/map UI
 
-```
-    python job.py
-```
+## Notes
 
-To run with cross-site evaluation, use:
-```
-    python job.py --cross_site_eval
-```
-The cross-site evaluation results can be viewed with:
-```
-cat /tmp/nvflare/simulation/hello-pt/server/simulate_job/cross_site_val/cross_val_results.json
-```
+- This example still uses CIFAR-10 for all clients, so it is an integration
+  test rather than a realistic FL benchmark.
+- Since this is local simulation, all clients may resolve to the same public IP
+  location, so markers can overlap on the map.
 
-To demonstrate HiveWatch as a framework-agnostic monitor, install HiveWatch and run the same NVFlare job with:
-```
-    python job.py --hivewatch
-```
-This swaps NVFlare's server-side FedAvg controller for a small HiveWatch subclass. The clients only return metrics; the server initializes one HiveWatch run, logs all client updates into that run, and emits to W&B, MLflow, and local SSE replay files. Set `WANDB_PROJECT`, `MLFLOW_TRACKING_URI`, `MLFLOW_EXPERIMENT`, `HIVEWATCH_RUN_NAME`, or `HIVEWATCH_PORT` to override the defaults.
-
-> **Note:** Depending on the number of clients, you might run into errors if several clients try to download the data at the same time. It is suggested to pre-download the data to avoid such errors.
-
-## Notebook
-
-For an interactive version of this example, see this [notebook](./hello-pt.ipynb), which can be executed in Google Colab.
-
-## Output summary
-
-#### Initialization
-* **TensorBoard**: Logs available at /tmp/nvflare/simulation/hello-pt/server/simulate_job/tb_events.
-* **Workflow**: BaseModelController initialized.
-#### Round 0
-* **Model Loading**: Initial model loaded from persistor.
-* **Clients Sampled**: site-1, site-2.
-* **Training**:
-  * Tasks sent to both sites.
-  * Two epochs completed with loss reported.
-* **Aggregation**: Models aggregated and persisted on the server.
-
-#### Round 1
-* **Clients Sampled**: site-1, site-2.
-* **Training**:
-  * Similar process as Round 0.
-  * **Aggregation**: Models aggregated and persisted.
-#### Completion
-* **FedAvg Process**: Successfully finished with the final model persisted.
