@@ -70,7 +70,7 @@
   .round-stat { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px 10px; }
   .round-stat .val { font-size:16px; font-weight:600; color:var(--text); line-height:1; }
   .round-stat .lbl { font-size:9px; color:var(--muted); margin-top:3px; }
-  .client-list { flex:1; overflow-y:auto; padding:8px; }
+  .client-list { flex:1; overflow-y:auto; padding:8px; min-height:0; }
   .client-list::-webkit-scrollbar { width:4px; }
   .client-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
   .client-card { padding:10px 12px; border-radius:8px; border:1px solid var(--border); margin-bottom:6px; cursor:pointer; transition:all 0.2s; background:var(--surface); }
@@ -82,9 +82,9 @@
   .client-badge.dropped { background:var(--red); }
   .client-location { font-size:10px; color:var(--muted); margin-bottom:5px; }
   .client-metrics { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-  .metric-chip { background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:3px 6px; font-size:10px; }
-  .metric-chip .val { color:var(--text); font-weight:500; }
-  .metric-chip .lbl { color:var(--muted); font-size:9px; }
+  .metric-chip { background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:5px 7px; font-size:10px; min-width:0; }
+  .metric-chip .val { color:var(--text); font-weight:600; line-height:1.25; overflow-wrap:anywhere; }
+  .metric-chip .lbl { color:var(--muted); font-size:9px; line-height:1.25; overflow-wrap:anywhere; }
   .map-area { flex:1; position:relative; display:flex; flex-direction:column; min-height:0; }
   #map { flex:1; z-index:1; min-height:0; }
   .leaflet-tile-pane { filter: var(--tile-filter); transition: filter 0.3s; }
@@ -130,9 +130,12 @@
   .speed-select { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:4px 8px; font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--text); cursor:pointer; }
   .playback-mode { font-size:10px; color:var(--muted); flex-shrink:0; }
   .playback-mode.replay { color:var(--orange); font-weight:600; }
-  .log-panel { position:absolute; bottom:16px; right:16px; width:290px; background:var(--surface); border:1px solid var(--border); border-radius:10px; z-index:999; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.12); opacity:0.95; }
-  .log-header { padding:8px 12px; border-bottom:1px solid var(--border); font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between; }
-  .log-entries { max-height:110px; overflow-y:auto; padding:6px; }
+  .log-panel { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.12); opacity:0.95; }
+  .log-panel.floating { position:fixed; width:290px; max-width:calc(100vw - 24px); z-index:2000; }
+  .log-panel.dragging { opacity:0.88; }
+  .sidebar-log-panel { margin:0 12px 12px; flex-shrink:0; }
+  .log-header { padding:8px 12px; border-bottom:1px solid var(--border); font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between; cursor:move; user-select:none; touch-action:none; }
+  .log-entries { max-height:180px; overflow-y:auto; padding:6px; }
   .log-entries::-webkit-scrollbar { width:3px; }
   .log-entries::-webkit-scrollbar-thumb { background:var(--border); }
   .log-entry { font-size:10px; padding:3px 6px; border-radius:4px; margin-bottom:2px; display:flex; gap:8px; animation:fadeIn 0.3s ease; }
@@ -197,6 +200,13 @@
     <div class="client-list" id="client-list">
       <div style="color:var(--muted);font-size:11px;padding:12px;text-align:center;">Waiting for clients…</div>
     </div>
+    <div class="log-panel sidebar-log-panel">
+      <div class="log-header">
+        <span>Event Log</span>
+        <span id="log-count">0 events</span>
+      </div>
+      <div class="log-entries" id="log-entries"></div>
+    </div>
   </div>
 
   <!-- Map + playback -->
@@ -207,14 +217,6 @@
       SSE: <span id="dbg-sse" style="color:var(--red)">disconnected</span><br>
       Last event: <span id="dbg-last">none</span><br>
       Events received: <span id="dbg-count">0</span>
-    </div>
-
-    <div class="log-panel">
-      <div class="log-header">
-        <span>Event Log</span>
-        <span id="log-count">0 events</span>
-      </div>
-      <div class="log-entries" id="log-entries"></div>
     </div>
 
     <!-- Playback bar -->
@@ -233,7 +235,7 @@
         <option value="1000" selected>1×</option>
         <option value="500">2×</option>
         <option value="200">5×</option>
-        <option value="50">10×</option>
+        <option value="100">10×</option>
       </select>
       <div class="playback-mode" id="playback-mode">live</div>
     </div>
@@ -433,6 +435,8 @@ const networkAnim = {
   frame: null,
   startedAt: 0,
   cycleMs: state.roundDurationMs,
+  replay: false,
+  endpointTimer: null,
 };
 
 function accColor(acc) {
@@ -546,6 +550,23 @@ function stopNetworkAnimation() {
     cancelAnimationFrame(networkAnim.frame);
     networkAnim.frame = null;
   }
+  if (networkAnim.endpointTimer) {
+    clearTimeout(networkAnim.endpointTimer);
+    networkAnim.endpointTimer = null;
+  }
+}
+
+function setReplayPacketsAtFinalState() {
+  networkAnim.endpointTimer = null;
+  Object.keys(lines).forEach(id => {
+    const client = state.clients[id];
+    if (!packets[id]) return;
+    const packetLL = client ? getPacketClientLL(id, client) : SERVER_LL;
+    packets[id].uplink.setLatLng(SERVER_LL);
+    packets[id].downlink
+      .setStyle({ opacity: 1, fillOpacity: 0.95 })
+      .setLatLng(packetLL);
+  });
 }
 
 function animateNetworkTraffic(now) {
@@ -558,26 +579,42 @@ function animateNetworkTraffic(now) {
     return;
   }
 
-  const cycle = ((now - networkAnim.startedAt) % networkAnim.cycleMs) / networkAnim.cycleMs;
-  const uploadProgress = pingPong(cycle);
-  const downloadProgress = pingPong((cycle + 0.5) % 1);
+  const elapsed = now - networkAnim.startedAt;
+  const cycle = networkAnim.replay
+    ? Math.min(1, elapsed / networkAnim.cycleMs)
+    : ((elapsed % networkAnim.cycleMs) / networkAnim.cycleMs);
+  const uploadPhase = 0.46;
+  const downloadStart = 0.56;
+  const uploadProgress = networkAnim.replay ? Math.min(1, cycle / uploadPhase) : pingPong(cycle);
+  const downloadProgress = networkAnim.replay ? Math.max(0, (cycle - downloadStart) / (1 - downloadStart)) : pingPong((cycle + 0.5) % 1);
+  const showDownload = !networkAnim.replay || cycle >= downloadStart;
 
   activeIds.forEach(id => {
     const client = state.clients[id];
     const packetLL = getPacketClientLL(id, client);
     ensureClientPackets(id, packetLL, accColor(client.local_accuracy));
     packets[id].uplink.setLatLng(lerpLatLng(packetLL, SERVER_LL, uploadProgress));
-    packets[id].downlink.setLatLng(lerpLatLng(SERVER_LL, packetLL, downloadProgress));
+    packets[id].downlink
+      .setStyle({ opacity: showDownload ? 1 : 0, fillOpacity: showDownload ? 0.95 : 0 })
+      .setLatLng(lerpLatLng(SERVER_LL, packetLL, downloadProgress));
   });
 
+  if (networkAnim.replay && cycle >= 1) {
+    networkAnim.frame = null;
+    return;
+  }
   networkAnim.frame = requestAnimationFrame(animateNetworkTraffic);
 }
 
-function syncNetworkAnimation(durationMs) {
-  networkAnim.cycleMs = Math.max(1200, durationMs || state.roundDurationMs || 4000);
+function syncNetworkAnimation(durationMs, minDurationMs = 1200, replay = false) {
+  networkAnim.cycleMs = Math.max(minDurationMs, durationMs || state.roundDurationMs || 4000);
   networkAnim.startedAt = performance.now();
+  networkAnim.replay = replay;
   stopNetworkAnimation();
   networkAnim.frame = requestAnimationFrame(animateNetworkTraffic);
+  if (replay) {
+    networkAnim.endpointTimer = setTimeout(setReplayPacketsAtFinalState, networkAnim.cycleMs);
+  }
 }
 
 function upsertClient(id, data) {
@@ -660,10 +697,7 @@ function renderSidebar() {
         </div>
         <div class="client-location">📍 ${c.city||"Unknown"}, ${c.country||""}</div>
         <div class="client-metrics">
-          <div class="metric-chip"><span class="val">${fmtAcc(c.local_accuracy)}</span><br><span class="lbl">accuracy</span></div>
-          <div class="metric-chip"><span class="val">${fmtLoss(c.local_loss)}</span><br><span class="lbl">loss</span></div>
-          <div class="metric-chip"><span class="val">${c.num_samples||"—"}</span><br><span class="lbl">samples</span></div>
-          <div class="metric-chip"><span class="val">${c.gradient_norm!=null?parseFloat(c.gradient_norm).toFixed(2):"—"}</span><br><span class="lbl">grad norm</span></div>
+          ${renderClientMetrics(c)}
         </div>
       </div>
     `).join("") ||
@@ -691,6 +725,123 @@ function dbg(status, lastEvt) {
   el.style.color = status==="connected"?"#10b981":"#ef4444";
   if (lastEvt) document.getElementById("dbg-last").textContent = lastEvt;
   document.getElementById("dbg-count").textContent = state.evtCount;
+}
+const HIDDEN_CLIENT_METADATA_KEYS = new Set([
+  "client_id", "id", "lat", "lng", "latitude", "longitude",
+  "city", "country", "region", "timezone", "postal", "zip",
+  "ip", "org", "host", "hostname", "fallback", "status",
+]);
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function shouldShowClientMetadata(key, value) {
+  if (!key || key.startsWith("_") || value == null) return false;
+  const lower = key.toLowerCase();
+  if (HIDDEN_CLIENT_METADATA_KEYS.has(lower)) return false;
+  if (lower.endsWith("_lat") || lower.endsWith("_lng")) return false;
+  if (lower.includes("latitude") || lower.includes("longitude")) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+  return true;
+}
+
+function formatClientMetadataValue(value) {
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return "—";
+    return Number.isInteger(value) ? String(value) : value.toFixed(4);
+  }
+  if (Array.isArray(value) || typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function renderClientMetrics(client) {
+  return Object.entries(client)
+    .filter(([key, value]) => shouldShowClientMetadata(key, value))
+    .map(([key, value]) => `
+      <div class="metric-chip">
+        <div class="val">${escapeHtml(formatClientMetadataValue(value))}</div>
+        <div class="lbl">${escapeHtml(key)}</div>
+      </div>
+    `).join("") ||
+    '<div style="color:var(--muted);font-size:10px;">No visible metadata</div>';
+}
+function initDraggableLogPanel() {
+  const panel = document.querySelector(".log-panel");
+  const handle = panel?.querySelector(".log-header");
+  if (!panel || !handle) return;
+  const storageKey = "hivewatch-log-panel-position";
+  let drag = null;
+
+  function clampPosition(left, top) {
+    const width = panel.offsetWidth || 290;
+    const height = panel.offsetHeight || 160;
+    return {
+      left: Math.max(8, Math.min(left, window.innerWidth - width - 8)),
+      top: Math.max(8, Math.min(top, window.innerHeight - height - 8)),
+    };
+  }
+
+  function floatPanel(left, top) {
+    const pos = clampPosition(left, top);
+    panel.classList.add("floating");
+    panel.style.left = `${pos.left}px`;
+    panel.style.top = `${pos.top}px`;
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+    return pos;
+  }
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+    if (saved) floatPanel(saved.left, saved.top);
+  } catch (_) {}
+
+  handle.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    const rect = panel.getBoundingClientRect();
+    const pos = floatPanel(rect.left, rect.top);
+    drag = {
+      dx: event.clientX - pos.left,
+      dy: event.clientY - pos.top,
+    };
+    panel.classList.add("dragging");
+    handle.setPointerCapture(event.pointerId);
+  });
+
+  handle.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const pos = floatPanel(event.clientX - drag.dx, event.clientY - drag.dy);
+    localStorage.setItem(storageKey, JSON.stringify(pos));
+  });
+
+  function endDrag(event) {
+    if (!drag) return;
+    drag = null;
+    panel.classList.remove("dragging");
+    try { handle.releasePointerCapture(event.pointerId); } catch (_) {}
+  }
+
+  handle.addEventListener("pointerup", endDrag);
+  handle.addEventListener("pointercancel", endDrag);
+  handle.addEventListener("dblclick", () => {
+    localStorage.removeItem(storageKey);
+    panel.classList.remove("floating", "dragging");
+    panel.removeAttribute("style");
+  });
+  window.addEventListener("resize", () => {
+    if (!panel.classList.contains("floating")) return;
+    const rect = panel.getBoundingClientRect();
+    const pos = floatPanel(rect.left, rect.top);
+    localStorage.setItem(storageKey, JSON.stringify(pos));
+  });
 }
 function handleLiveEvent(msg) {
   if (typeof msg === "string") {
@@ -812,7 +963,7 @@ function applyRound(snapshot) {
   if (snapshot.duration != null) state.roundDurationMs = Math.max(1200, snapshot.duration * 1000);
 
   snapshot.clients.forEach(c => upsertClient(c.client_id, c));
-  syncNetworkAnimation(state.roundDurationMs);
+  syncNetworkAnimation(getReplayAnimationDuration(snapshot), 90, true);
 
   addLog(
     `Round ${snapshot.round} — acc=${fmtAcc(snapshot.globalAcc)} loss=${fmtLoss(snapshot.globalLoss)}`,
@@ -967,7 +1118,16 @@ function togglePlay() {
 
 function getPlaybackDelay(snapshot) {
   const base = snapshot?.duration != null ? Math.max(250, snapshot.duration * 1000) : 1000;
-  return Math.max(50, Math.round(base * (pb.speed / 1000)));
+  return Math.max(120, Math.round(base * (pb.speed / 1000)));
+}
+
+function getReplayAnimationDuration(snapshot) {
+  return Math.max(90, Math.round(getPlaybackDelay(snapshot) * 0.9));
+}
+
+function getCurrentPlaybackSnapshot() {
+  if (!pb.rounds.length) return null;
+  return pb.rounds[Math.max(0, Math.min(pb.index - 1, pb.rounds.length - 1))];
 }
 
 function startPlayback() {
@@ -1039,7 +1199,18 @@ function seekTo(e) {
   updateProgress();
 }
 
-function setSpeed(val) { pb.speed = parseInt(val); }
+function setSpeed(val) {
+  const nextSpeed = parseInt(val, 10);
+  if (!Number.isFinite(nextSpeed)) return;
+  pb.speed = nextSpeed;
+  if (!pb.playing) return;
+
+  const snapshot = getCurrentPlaybackSnapshot();
+  const delay = getPlaybackDelay(snapshot);
+  if (pb.timer) clearTimeout(pb.timer);
+  syncNetworkAnimation(getReplayAnimationDuration(snapshot), 90, true);
+  pb.timer = setTimeout(stepPlayback, delay);
+}
 function connect() {
   const es = new EventSource(SSE_URL);
 
@@ -1119,6 +1290,7 @@ function connect() {
     }
   };
 }
+initDraggableLogPanel();
 if (METADATA_URL || EVENTS_URL) {
   loadRunFromSource({
     metadataUrl: METADATA_URL,

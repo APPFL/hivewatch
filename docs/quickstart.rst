@@ -27,6 +27,7 @@ Minimal example
            local_accuracy=0.70 + round_num * 0.03,
            local_loss=0.90 - round_num * 0.08,
            num_samples=500,
+           current_local_steps=200,
            bytes_sent=8192,
            lat=41.88,
            lng=-87.63,
@@ -45,6 +46,11 @@ This creates two run artifacts under ``runs/``:
 
 * ``<run_id>.jsonl`` with the full event stream.
 * ``<run_id>.map.json`` with map-ready metadata for replay and deferred viewing.
+
+Client metadata that is not part of the core schema is preserved. The map
+dashboard displays non-geographic client fields automatically; prefix a field
+with ``_`` when it should remain in the artifact but stay hidden from the map
+card, for example ``_debug_score``.
 
 Serve the dashboard
 -------------------

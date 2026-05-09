@@ -26,6 +26,21 @@ This emitter writes:
 * ``runs/<run_id>.jsonl`` with the full event stream
 * ``runs/<run_id>.map.json`` with map-ready metadata
 
+Set ``serve_map=False`` when training and dashboard serving should be separate.
+This is useful for batch jobs, shared run directories, or environments where a
+long-running dashboard process already exists.
+
+Server metadata, such as the server location or host label, can be recorded
+with the runtime API:
+
+.. code-block:: python
+
+   hw.set_server_metadata(city="Chicago", country="US", lat=41.7, lng=-87.9)
+
+Unknown client metadata is preserved in both artifacts. Fields prefixed with
+``_`` remain available in the saved data but are hidden by the bundled map
+viewer.
+
 Weights & Biases Emitter
 ========================
 

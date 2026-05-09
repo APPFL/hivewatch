@@ -33,8 +33,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.command == "map" and args.map_command == "run":
-        # Disable watch mode when loading a specific run
-        watch_mode = args.run_id
+        # Static run replay reads the selected JSONL directly; the directory
+        # watcher is only needed for live dashboards.
+        watch_mode = args.run_id is None
         
         server = MapServer(
             host=args.host,

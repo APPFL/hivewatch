@@ -66,7 +66,8 @@ hivewatch.init(
 - `runs/<run_id>.jsonl` for the complete event history
 - `runs/<run_id>.map.json` for map-ready metadata that can be loaded directly later
 
-Serve the dashboard separately:
+Serve the dashboard separately. Without `--run-id`, the server watches the run
+directory and streams new events as they arrive:
 
 ```bash
 hivewatch map run --runs-dir runs --port 7070
@@ -78,7 +79,10 @@ Open one specific saved run in static mode:
 hivewatch map run --runs-dir runs --run-id run-abc123
 ```
 
-The bundled `examples/hivewatch_map.html` viewer loads map metadata first and falls back to the JSONL-derived event history for older runs. This keeps local development and later replay workflows compatible with the same viewer.
+The bundled viewer loads map metadata first and falls back to the JSONL-derived
+event history for older runs. It displays non-geographic client metadata in the
+sidebar automatically. Prefix a client metadata key with `_` when the value
+should remain in the saved artifact but stay hidden from the map card.
 
 ### Package layout
 
@@ -190,6 +194,11 @@ hivewatch.init(emitters=[MyEmitter()])
 | `lat` / `lng` / `country` | float/str | Client location metadata for map visualization |
 | `base_round` | int | For asynchronous FL, staleness is `round - base_round` |
 
+Unknown client fields are preserved in `ClientUpdate` objects and the local
+JSONL/`.map.json` artifacts. The map dashboard displays visible non-geographic
+fields automatically. Use a leading underscore for values that should be stored
+but hidden from the bundled map viewer, for example `_debug_score`.
+
 ## Logged Metrics
 
 ### Weights & Biases
@@ -236,7 +245,8 @@ FL Server
         ▼
 hivewatch
   ├── WandbEmitter  →  wandb.ai dashboard
-  └── MLflowEmitter →  MLflow UI (localhost:5000)
+  ├── MLflowEmitter →  MLflow UI (localhost:5000)
+  └── SSEEmitter    →  local JSONL/.map.json artifacts and map dashboard
 ```
 
 `hivewatch` does not depend on a specific transport layer or FL framework. Applications bridge their training framework to `hivewatch` in the same way they would bridge it to another experiment tracking backend.
