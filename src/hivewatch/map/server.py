@@ -94,6 +94,9 @@ class MapServer:
                         content = candidate.read_bytes()
                         self.send_response(200)
                         self.send_header("Content-Type", "text/html; charset=utf-8")
+                        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+                        self.send_header("Pragma", "no-cache")
+                        self.send_header("Expires", "0")
                         self._cors()
                         self.end_headers()
                         self.wfile.write(content)
@@ -290,6 +293,10 @@ class MapServer:
             self._server.shutdown()
             self._server.server_close()
             self._server = None
+        if self._watch_thread is not None and self._watch_thread.is_alive():
+            self._watch_thread.join(timeout=max(1.0, self.poll_interval * 2))
+        self._thread = None
+        self._watch_thread = None
 
     def publish(self, payload: dict):
         if payload.get("run_id"):
@@ -330,3 +337,37 @@ class MapServer:
                 except json.JSONDecodeError as exc:
                     logger.warning("[hivewatch/map] could not parse %s: %s", jsonl_path, exc)
         return events
+
+    def _watch_paths(self) -> List[Path]:
+        if self._fixed_run_id and self._live_run_id:
+            return [self.runs_dir / f"{self._live_run_id}.jsonl"]
+        return sorted(self.runs_dir.glob("*.jsonl"))
+
+    def _prime_watch_offsets(self):
+        for jsonl_path in self._watch_paths():
+            if jsonl_path.exists():
+                self._seen_offsets[jsonl_path] = jsonl_path.stat().st_size
+
+    def _watch_loop(self):
+        while self._server is not None:
+            for jsonl_path in self._watch_paths():
+                if not jsonl_path.exists():
+                    continue
+
+                offset = self._seen_offsets.get(jsonl_path, 0)
+                try:
+                    with jsonl_path.open("r", encoding="utf-8") as handle:
+                        handle.seek(offset)
+                        for line in handle:
+                            line = line.strip()
+                            if not line:
+                                continue
+                            try:
+                                self.publish(json.loads(line))
+                            except json.JSONDecodeError as exc:
+                                logger.warning("[hivewatch/map] could not parse %s: %s", jsonl_path, exc)
+                        self._seen_offsets[jsonl_path] = handle.tell()
+                except OSError as exc:
+                    logger.warning("[hivewatch/map] could not watch %s: %s", jsonl_path, exc)
+
+            time.sleep(self.poll_interval)

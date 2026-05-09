@@ -308,20 +308,4 @@ class SSEEmitter:
 
     @staticmethod
     def _client_dict(c: ClientUpdate) -> dict:
-        return {
-            "client_id":      c.client_id,
-            "round":          c.round,
-            "lat":            c.lat,
-            "lng":            c.lng,
-            "city":           c.city,
-            "country":        c.country,
-            "local_accuracy": c.local_accuracy,
-            "local_loss":     c.local_loss,
-            "num_samples":    c.num_samples,
-            "gradient_norm":  c.gradient_norm,
-            "bytes_sent":     c.bytes_sent,
-            "train_time_sec": c.train_time_sec,
-            "cpu_pct":        c.cpu_pct,
-            "ram_mb":         c.ram_mb,
-            "status":         c.status,
-        }
+        return c.to_dict()

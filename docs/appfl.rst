@@ -51,4 +51,6 @@ HiveWatch understands common FL metadata such as:
 * ``lat``, ``lng``, ``city``, and ``country`` for map views
 
 Unknown keys are preserved in the client payload, so you can attach
-framework-specific metadata without breaking the core schema.
+framework-specific metadata without breaking the core schema. The bundled map
+viewer displays non-geographic client metadata automatically. Prefix a key with
+``_`` when it should be saved but hidden from the map card.

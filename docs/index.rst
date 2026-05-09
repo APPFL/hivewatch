@@ -10,7 +10,7 @@ forcing you into a single training framework.
 With HiveWatch you can:
 
 * log client and round metrics from custom training loops,
-* stream and replay runs locally with the built-in map dashboard,
+* stream, inspect, and replay runs locally with the built-in map dashboard,
 * send metrics to Weights & Biases, MLflow, or both, and
 * integrate observability into APPFL workflows with minimal glue code.
 
@@ -55,8 +55,8 @@ HiveWatch is organized around a few clear technical components.
 
       Map Dashboard
       ^^^^^^^^^^^^^
-      Visualizes client geography and run progress from saved ``.jsonl`` and
-      ``.map.json`` artifacts.
+      Visualizes client geography, training metadata, and replay progress
+      from saved ``.jsonl`` and ``.map.json`` artifacts.
 
    .. grid-item-card::
 
