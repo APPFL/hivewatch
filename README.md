@@ -4,6 +4,10 @@
 
 `hivewatch` is a framework-agnostic monitoring toolkit for federated and distributed machine learning workloads. It provides a consistent interface for logging client updates, round summaries, and map-ready metadata across local experiments and larger deployments.
 
+<p align="center"><img src="https://raw.githubusercontent.com/APPFL/hivewatch/main/docs/_static/global_hivewatch.JPG" alt="hivewatch global map dashboard" width="800"/></p>
+
+<p align="center"><em>The bundled map dashboard following a live federated run across four international sites — Singapore, London, S&atilde;o Paulo, and Montr&eacute;al — plus a US client, each streaming round-by-round metadata back to the aggregation server.</em></p>
+
 ## Installation
 
 `hivewatch` requires Python 3.8 or later.
