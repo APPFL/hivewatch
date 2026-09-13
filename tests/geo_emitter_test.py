@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from hivewatch.emitters.sse_emitter import SSEEmitter
+from hivewatch.emitters.geo_emitter import GeoEmitter
 from hivewatch.schema import ClientUpdate, RoundSummary
 
 
@@ -10,8 +10,8 @@ def read_jsonl(path):
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
-def test_sse_emitter_persists_jsonl_and_map_metadata_with_custom_client_fields(tmp_path):
-    emitter = SSEEmitter(runs_dir=str(tmp_path), serve_map=False)
+def test_geo_emitter_persists_jsonl_and_map_metadata_with_custom_client_fields(tmp_path):
+    emitter = GeoEmitter(runs_dir=str(tmp_path), serve_map=False)
     emitter.on_init("run-custom", "FedAvg", {"epochs": 3})
     emitter.on_server_metadata({"lat": 41.7, "lng": -87.9, "city": "Chicago"})
 
@@ -71,8 +71,8 @@ def test_sse_emitter_persists_jsonl_and_map_metadata_with_custom_client_fields(t
     assert map_client["_hidden_acc"] == 0.99
 
 
-def test_sse_emitter_merges_dropout_and_comm_failure_into_map_metadata(tmp_path):
-    emitter = SSEEmitter(runs_dir=str(tmp_path), serve_map=False)
+def test_geo_emitter_merges_dropout_and_comm_failure_into_map_metadata(tmp_path):
+    emitter = GeoEmitter(runs_dir=str(tmp_path), serve_map=False)
     emitter.on_init("run-status", "FedAvg", {})
 
     emitter.on_dropout(2, "client-drop", "timeout")

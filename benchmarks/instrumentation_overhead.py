@@ -7,7 +7,7 @@ under two configurations:
 
   none  - no emitters attached (bookkeeping only: schema normalization,
           derived-metric computation, round-state tracking).
-  sse   - a single SSEEmitter attached (synchronous JSONL append plus a
+  geo   - a single GeoEmitter attached (synchronous JSONL append plus a
           full .map.json rewrite on every call). The embedded HTTP/SSE
           server is disabled (serve_map=False) so the numbers reflect file
           I/O only, not request serving.
@@ -34,7 +34,7 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import hivewatch
-from hivewatch.emitters import SSEEmitter
+from hivewatch.emitters import GeoEmitter
 
 
 def percentile(data, p):
@@ -122,9 +122,9 @@ def main():
             "log_round": summarize(r),
         }
 
-        sse = SSEEmitter(runs_dir=os.path.join(tmp_dir, "runs"), serve_map=False)
-        cu, r = run_trial(args.rounds, args.clients, emitters=[sse])
-        results["sse"] = {
+        geo = GeoEmitter(runs_dir=os.path.join(tmp_dir, "runs"), serve_map=False)
+        cu, r = run_trial(args.rounds, args.clients, emitters=[geo])
+        results["geo"] = {
             "log_client_update": summarize(cu),
             "log_round": summarize(r),
         }

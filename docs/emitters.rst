@@ -5,20 +5,20 @@ Emitters
 HiveWatch keeps the runtime API small by pushing output behavior into emitter
 classes. You create one or more emitters and pass them to ``hivewatch.init()``.
 
-SSE Emitter
+Geo Emitter
 ===========
 
-Use ``SSEEmitter`` when you want a local dashboard, replayable run artifacts,
+Use ``GeoEmitter`` when you want a local dashboard, replayable run artifacts,
 and the geographic map view without depending on an external service.
 
 .. code-block:: python
 
    import hivewatch as hw
-   from hivewatch.emitters import SSEEmitter
+   from hivewatch.emitters import GeoEmitter
 
    hw.init(
        algorithm="FedAvg",
-       emitters=[SSEEmitter(port=7070, serve_map=False)],
+       emitters=[GeoEmitter(port=7070, serve_map=False)],
    )
 
 This emitter writes:
@@ -93,11 +93,11 @@ HiveWatch can log to all three emitters in the same run:
 .. code-block:: python
 
    import hivewatch as hw
-   from hivewatch.emitters import MLflowEmitter, SSEEmitter, WandbEmitter
+   from hivewatch.emitters import MLflowEmitter, GeoEmitter, WandbEmitter
 
    hw.init(
        emitters=[
-           SSEEmitter(serve_map=False),
+           GeoEmitter(serve_map=False),
            WandbEmitter(project="my-fl-project"),
            MLflowEmitter(experiment="my-fl-project"),
        ],

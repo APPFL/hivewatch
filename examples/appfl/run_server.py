@@ -5,7 +5,7 @@ import argparse
 from omegaconf import OmegaConf
 from appfl.agent import ServerAgent
 from appfl.comm.grpc import GRPCServerCommunicator, serve
-from hivewatch.emitters import WandbEmitter, MLflowEmitter, SSEEmitter
+from hivewatch.emitters import WandbEmitter, MLflowEmitter, GeoEmitter
 from hivewatch.geo import get_location
 
 
@@ -77,7 +77,7 @@ hivewatch.init(
     config    = OmegaConf.to_container(server_agent_config.server_configs, resolve=True),
     emitters  = [
         WandbEmitter(project="my-fl-project-wandb"),
-        SSEEmitter(port=7070, serve_map=True),
+        GeoEmitter(port=7070, serve_map=True),
         MLflowEmitter(
             tracking_uri                     = mlflow_tracking_uri,
             experiment                       = mlflow_experiment,

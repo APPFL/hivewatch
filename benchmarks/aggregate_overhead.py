@@ -39,7 +39,7 @@ def main():
 
     trials = [json.load(open(p)) for p in paths]
 
-    configs = ["none", "sse"]
+    configs = ["none", "geo"]
     calls = ["log_client_update", "log_round"]
 
     total_rounds = trials[0]["rounds"] * len(trials)

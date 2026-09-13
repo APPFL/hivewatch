@@ -30,7 +30,7 @@ HiveWatch is organized around a few clear technical components.
 
    .. grid-item-card::
 
-      SSE Emitter
+      Geo Emitter
       ^^^^^^^^^^^
       Streams local events, writes replayable run artifacts, and powers the
       built-in map dashboard workflow.

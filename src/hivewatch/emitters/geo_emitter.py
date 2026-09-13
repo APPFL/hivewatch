@@ -1,5 +1,5 @@
 """
-hivewatch.emitters.sse_emitter
+hivewatch.emitters.geo_emitter
 ────────────────────────────
 Starts a lightweight HTTP server that:
   1. Streams live hivewatch events to the map dashboard via SSE (GET /stream)
@@ -31,12 +31,13 @@ from typing import List, Optional
 from ..map import MapServer, merge_client_state
 from ..schema import ClientUpdate, RoundSummary
 
-logger = logging.getLogger("hivewatch.emitters.sse")
+logger = logging.getLogger("hivewatch.emitters.geo")
 
 
-class SSEEmitter:
+class GeoEmitter:
     """
-    Emitter that broadcasts hivewatch events over SSE and persists to JSONL files.
+    Emitter that broadcasts hivewatch events over SSE and persists map/geo
+    metadata to JSONL files.
     """
 
     def __init__(
@@ -95,14 +96,14 @@ class SSEEmitter:
             self._start_server()
         self._broadcast(header)
 
-        print(f"[hivewatch/sse] run={run_id}")
-        print(f"[hivewatch/sse] history → {jsonl_path}")
+        print(f"[hivewatch/geo] run={run_id}")
+        print(f"[hivewatch/geo] history → {jsonl_path}")
         if self._server is not None:
-            print(f"[hivewatch/sse] dashboard → http://localhost:{self.port}")
+            print(f"[hivewatch/geo] dashboard → http://localhost:{self.port}")
         elif self.serve_map:
-            print(f"[hivewatch/sse] port {self.port} already in use — using existing server at http://localhost:{self.port}")
+            print(f"[hivewatch/geo] port {self.port} already in use — using existing server at http://localhost:{self.port}")
         else:
-            print(f"[hivewatch/sse] dashboard disabled; run `hivewatch map run --runs-dir {self.runs_dir}` to serve the map")
+            print(f"[hivewatch/geo] dashboard disabled; run `hivewatch map run --runs-dir {self.runs_dir}` to serve the map")
 
     def on_round(self, summary: RoundSummary, clients: List[ClientUpdate]):
         payload = {
@@ -294,7 +295,7 @@ class SSEEmitter:
         except OSError as exc:
             if exc.errno == errno.EADDRINUSE:
                 logger.warning(
-                    "[hivewatch/sse] port %d already in use — skipping embedded map server. "
+                    "[hivewatch/geo] port %d already in use — skipping embedded map server. "
                     "Run data is still persisted; the existing server at http://localhost:%d "
                     "will serve this run's history once it completes.",
                     self.port,

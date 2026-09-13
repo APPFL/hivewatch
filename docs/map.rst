@@ -9,7 +9,7 @@ completed runs.
 Generate run artifacts
 ----------------------
 
-Use ``SSEEmitter`` during training to create:
+Use ``GeoEmitter`` during training to create:
 
 * ``runs/<run_id>.jsonl`` for the full event stream
 * ``runs/<run_id>.map.json`` for map-friendly round and client metadata
@@ -17,9 +17,9 @@ Use ``SSEEmitter`` during training to create:
 .. code-block:: python
 
    import hivewatch as hw
-   from hivewatch.emitters import SSEEmitter
+   from hivewatch.emitters import GeoEmitter
 
-   hw.init(emitters=[SSEEmitter(serve_map=False)])
+   hw.init(emitters=[GeoEmitter(serve_map=False)])
 
 Serve the dashboard
 -------------------
