@@ -57,15 +57,15 @@ hivewatch.finish()
 ### Local map and deferred map metadata
 
 ```python
-from hivewatch.emitters import SSEEmitter
+from hivewatch.emitters import GeoEmitter
 
 hivewatch.init(
     algorithm="FedAvg",
-    emitters=[SSEEmitter(port=7070, serve_map=False)],
+    emitters=[GeoEmitter(port=7070, serve_map=False)],
 )
 ```
 
-`SSEEmitter` persists both of the following artifacts:
+`GeoEmitter` persists both of the following artifacts:
 
 - `runs/<run_id>.jsonl` for the complete event history
 - `runs/<run_id>.map.json` for map-ready metadata that can be loaded directly later
@@ -250,7 +250,7 @@ FL Server
 hivewatch
   ├── WandbEmitter  →  wandb.ai dashboard
   ├── MLflowEmitter →  MLflow UI (localhost:5000)
-  └── SSEEmitter    →  local JSONL/.map.json artifacts and map dashboard
+  └── GeoEmitter    →  local JSONL/.map.json artifacts and map dashboard
 ```
 
 `hivewatch` does not depend on a specific transport layer or FL framework. Applications bridge their training framework to `hivewatch` in the same way they would bridge it to another experiment tracking backend.

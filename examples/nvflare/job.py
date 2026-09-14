@@ -40,7 +40,7 @@ class HiveWatchFedAvg(FedAvg):
 
     def run(self):
         import hivewatch
-        from hivewatch.emitters import MLflowEmitter, SSEEmitter, WandbEmitter
+        from hivewatch.emitters import MLflowEmitter, GeoEmitter, WandbEmitter
         from hivewatch.geo import get_location
 
         self._hivewatch_location = get_location()
@@ -54,7 +54,7 @@ class HiveWatchFedAvg(FedAvg):
                     experiment=os.environ.get("MLFLOW_EXPERIMENT", "hivewatch-nvflare-hello-pt"),
                     run_name=os.environ.get("HIVEWATCH_RUN_NAME", "nvflare-hello-pt"),
                 ),
-                SSEEmitter(port=int(os.environ.get("HIVEWATCH_PORT", "7070")), serve_map=True),
+                GeoEmitter(port=int(os.environ.get("HIVEWATCH_PORT", "7070")), serve_map=True),
             ],
         )
         hivewatch.set_server_metadata(

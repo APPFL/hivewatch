@@ -49,7 +49,7 @@ hivewatch.init(
     config    = dict(server_agent_config.server_configs),
     emitters  = [
         WandbEmitter(project="my-fl-project-wandb"),
-        SSEEmitter(port=7070, serve_map=False),
+        GeoEmitter(port=7070, serve_map=False),
         MLflowEmitter(experiment="my-fl-project-mlflow"),
     ],
 )
@@ -57,6 +57,6 @@ hivewatch.init(
 
 - **W&B**: Metrics appear in the `my-fl-project-wandb` project. Requires `WANDB_API_KEY` to be set, or run `wandb login` first.
 - **MLflow**: Runs are recorded in the `my-fl-project-mlflow` experiment. The tracking URI defaults to `./mlruns`; override with `MLFLOW_TRACKING_URI`.
-- **Map metadata + local viewer**: `SSEEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
+- **Map metadata + local viewer**: `GeoEmitter` writes raw events to `runs/<run_id>.jsonl` and map-ready metadata to `runs/<run_id>.map.json`. Serve the dashboard separately with `hivewatch map run --runs-dir runs --port 7070`.
 
 To use only one backend, remove the unwanted emitter from the list.

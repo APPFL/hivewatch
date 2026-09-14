@@ -18,7 +18,7 @@ The HiveWatch-specific work in this directory adds:
 - per-round aggregate `hivewatch.log_round(...)`
 - run shutdown with `hivewatch.finish()`
 - client geo metadata for the map UI
-- emitters for W&B, MLflow, and SSE/map replay
+- emitters for W&B, MLflow, and Geo/map replay
 
 ## Files
 
@@ -83,7 +83,7 @@ This example can emit to three backends:
 
 - `WandbEmitter`
 - `MLflowEmitter`
-- `SSEEmitter`
+- `GeoEmitter`
 
 Environment variables used by `job.py`:
 
@@ -99,7 +99,7 @@ Important:
 
 - If `wandb` is enabled, you must also run `wandb login` or set `WANDB_API_KEY`.
 - `MLFLOW_TRACKING_URI` must point to a running MLflow server.
-- The map UI is served by `SSEEmitter` on `http://localhost:${HIVEWATCH_PORT}`.
+- The map UI is served by `GeoEmitter` on `http://localhost:${HIVEWATCH_PORT}`.
 
 ## Run
 

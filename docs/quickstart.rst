@@ -3,7 +3,7 @@ Quick Start
 ===========
 
 This example shows the smallest useful HiveWatch setup: log a run with the
-local SSE emitter, persist the data, and serve the dashboard separately.
+local Geo emitter, persist the data, and serve the dashboard separately.
 
 Minimal example
 ---------------
@@ -11,11 +11,11 @@ Minimal example
 .. code-block:: python
 
    import hivewatch as hw
-   from hivewatch.emitters import SSEEmitter
+   from hivewatch.emitters import GeoEmitter
 
    hw.init(
        algorithm="FedAvg",
-       emitters=[SSEEmitter(port=7070, serve_map=False)],
+       emitters=[GeoEmitter(port=7070, serve_map=False)],
    )
 
    for round_num in range(5):
