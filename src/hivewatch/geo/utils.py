@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-import requests
-
 
 def get_location(ip: str | None = None) -> dict:
     """Resolve the current client or a specific IP to location metadata using ipinfo.io."""
+    try:
+        import requests
+    except ImportError:
+        raise ImportError(
+            "requests not installed. Run: pip install \"hivewatch[geo]\""
+        )
+
     try:
         url = "https://ipinfo.io/json" if not ip else f"https://ipinfo.io/{ip}/json"
         response = requests.get(url, timeout=5)
