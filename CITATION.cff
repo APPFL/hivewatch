@@ -1,13 +1,17 @@
 cff-version: 1.2.0
 message: If you use this software, please cite it as below.
 authors:
+  - family-names: Chunduru
+    given-names: Abhijit
+    email: schunduru@anl.gov
+    affiliation: Argonne National Laboratory
   - family-names: Li
     given-names: Zilinghan
     email: zilinghan.li@anl.gov
     affiliation: Argonne National Laboratory
-  - family-names: Chunduru
-    given-names: Abhijit
-    email: schunduru@anl.gov
+  - family-names: Joel
+    given-names: Matthew
+    email: mjoel@anl.gov
     affiliation: Argonne National Laboratory
   - family-names: Madduri
     given-names: Ravi
@@ -17,4 +21,4 @@ license: MIT
 repository-code: https://github.com/APPFL/hivewatch
 title: HiveWatch
 version: 0.3.0
-url: https://appfl.github.io/hivewatch/
+url: https://appfl.github.io/hivewatch
