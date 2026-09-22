@@ -6,7 +6,7 @@ from ._state import _r
 from .run import HivewatchRun, init
 from .schema import ClientUpdate, RoundSummary
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 __all__ = [
     "HivewatchRun",
