@@ -170,7 +170,7 @@ def test_mlflow_on_round_logs_round_client_system_and_geo_metrics(fake_mlflow):
         total_bytes_up=2_000_000,
         total_bytes_down=500_000,
         round_duration_sec=12.0,
-        gradient_divergence=0.3,
+        gradient_norm_dispersion=0.3,
         aggregation_time_sec=1.5,
         algorithm_metadata={"mu": 0.01, "strategy": "fedavg"},
     )
@@ -184,6 +184,7 @@ def test_mlflow_on_round_logs_round_client_system_and_geo_metrics(fake_mlflow):
     assert metrics["round/accuracy"] == pytest.approx(0.95)
     assert metrics["round/participation_rate"] == pytest.approx(0.5)
     assert metrics["comm/total_bytes_mb"] == pytest.approx(2.5)
+    assert metrics["agg/gradient_norm_dispersion"] == pytest.approx(0.3)
     assert metrics["agg/algo/mu"] == pytest.approx(0.01)
     assert "agg/algo/strategy" not in metrics
     assert metrics["client.client-1.accuracy"] == pytest.approx(0.9)

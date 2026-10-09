@@ -215,7 +215,7 @@ but hidden from the bundled map viewer, for example `_debug_score`.
 | `round/duration_sec` | Wall-clock time per round |
 | `comm/total_bytes_mb` | Total upload and download volume |
 | `comm/bytes_per_client_mb` | Per-client communication cost |
-| `agg/gradient_divergence` | Standard deviation of per-client gradient norms |
+| `agg/gradient_norm_dispersion` | Standard deviation of per-client gradient norms (magnitude-only heterogeneity signal; formerly `agg/gradient_divergence`) |
 | `agg/aggregation_time_sec` | Server-side aggregation time |
 | `client/<id>/accuracy` | Per-client accuracy |
 | `client/<id>/gradient_norm` | Per-client gradient norm |

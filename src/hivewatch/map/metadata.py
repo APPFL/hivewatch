@@ -26,7 +26,7 @@ def build_rounds_from_events(events: List[dict]) -> List[dict]:
                 "globalAcc": None,
                 "globalLoss": None,
                 "duration": None,
-                "divergence": None,
+                "dispersion": None,
                 "clients": {},
             },
         )
@@ -40,8 +40,10 @@ def build_rounds_from_events(events: List[dict]) -> List[dict]:
                 round_state["globalLoss"] = metrics.get("global_loss")
             if metrics.get("round_duration_sec") is not None:
                 round_state["duration"] = metrics.get("round_duration_sec")
-            if metrics.get("gradient_divergence") is not None:
-                round_state["divergence"] = metrics.get("gradient_divergence")
+            # `gradient_divergence` is the pre-v0.3.1 name, kept for replaying old runs
+            dispersion = metrics.get("gradient_norm_dispersion", metrics.get("gradient_divergence"))
+            if dispersion is not None:
+                round_state["dispersion"] = dispersion
 
         for client in event.get("clients", []):
             client_id = client.get("client_id")
@@ -65,7 +67,7 @@ def build_rounds_from_events(events: List[dict]) -> List[dict]:
             "globalAcc": round_state["globalAcc"],
             "globalLoss": round_state["globalLoss"],
             "duration": round_state["duration"],
-            "divergence": round_state["divergence"],
+            "dispersion": round_state["dispersion"],
             "clients": list(round_state["clients"].values()),
         }
         for _, round_state in sorted(by_round.items())

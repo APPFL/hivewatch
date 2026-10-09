@@ -126,8 +126,8 @@ class WandbEmitter:
             log["comm/bytes_per_client_mb"] = up_mb / summary.num_completed
 
         # Aggregation health
-        if summary.gradient_divergence is not None:
-            log["agg/gradient_divergence"] = summary.gradient_divergence
+        if summary.gradient_norm_dispersion is not None:
+            log["agg/gradient_norm_dispersion"] = summary.gradient_norm_dispersion
         if summary.aggregation_time_sec is not None:
             log["agg/aggregation_time_sec"] = summary.aggregation_time_sec
         for k, v in summary.algorithm_metadata.items():
