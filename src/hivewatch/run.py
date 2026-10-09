@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import logging
+import warnings
 import threading
 import statistics
 from typing import Dict, List, Optional
@@ -17,7 +18,7 @@ class HivewatchRun:
     A single federated learning observability run.
 
     Tracks per-client updates and round summaries, auto-computes derived
-    metrics (gradient divergence, byte totals, round wall time), and fans
+    metrics (gradient-norm dispersion, byte totals, round wall time), and fans
     events out to one or more emitter backends.
 
     Prefer constructing via ``hivewatch.init()`` rather than directly, which
@@ -59,8 +60,9 @@ class HivewatchRun:
     # ── Public API ────────────────────────────────────────────────────────────
 
     def round_start(self, round: int):
-        self._round_start_times[round] = time.time()
-        self._pending_clients[round]   = []
+        with self._access_lock:
+            self._round_start_times[round] = time.time()
+            self._pending_clients[round]   = []
 
     def log_client_update(self, client_id: str, **kwargs):
         with self._access_lock:
@@ -88,54 +90,65 @@ class HivewatchRun:
         num_failures:         int             = 0,
         total_bytes_up:       int             = 0,
         total_bytes_down:     int             = 0,
-        gradient_divergence:  Optional[float] = None,
+        gradient_norm_dispersion: Optional[float] = None,
         aggregation_time_sec: Optional[float] = None,
         algorithm_metadata:   Optional[dict]  = None,
+        gradient_divergence:  Optional[float] = None,
     ):
-        clients = self._pending_clients.pop(round, [])
+        if gradient_divergence is not None:
+            warnings.warn(
+                "log_round(gradient_divergence=...) is deprecated; use gradient_norm_dispersion",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if gradient_norm_dispersion is None:
+                gradient_norm_dispersion = gradient_divergence
 
-        if total_bytes_up == 0:
-            reported = [c.bytes_sent for c in clients if c.bytes_sent is not None]
-            if reported:
-                total_bytes_up = sum(reported)
-        if total_bytes_down == 0:
-            reported = [c.bytes_received for c in clients if c.bytes_received is not None]
-            if reported:
-                total_bytes_down = sum(reported)
+        with self._access_lock:
+            clients = self._pending_clients.pop(round, [])
 
-        if gradient_divergence is None:
-            norms = [c.gradient_norm for c in clients if c.gradient_norm is not None]
-            if len(norms) > 1:
-                gradient_divergence = statistics.stdev(norms)
+            if total_bytes_up == 0:
+                reported = [c.bytes_sent for c in clients if c.bytes_sent is not None]
+                if reported:
+                    total_bytes_up = sum(reported)
+            if total_bytes_down == 0:
+                reported = [c.bytes_received for c in clients if c.bytes_received is not None]
+                if reported:
+                    total_bytes_down = sum(reported)
 
-        round_duration = None
-        if round in self._round_start_times:
-            round_duration = time.time() - self._round_start_times.pop(round)
+            if gradient_norm_dispersion is None:
+                norms = [c.gradient_norm for c in clients if c.gradient_norm is not None]
+                if len(norms) > 1:
+                    gradient_norm_dispersion = statistics.stdev(norms)
 
-        num_completed = len([c for c in clients if c.status == "active"])
+            round_duration = None
+            if round in self._round_start_times:
+                round_duration = time.time() - self._round_start_times.pop(round)
 
-        summary = RoundSummary(
-            round                = round,
-            global_accuracy      = global_accuracy,
-            global_loss          = global_loss,
-            num_selected         = num_selected if num_selected is not None else len(clients),
-            num_completed        = num_completed,
-            num_stragglers       = num_stragglers,
-            num_failures         = num_failures,
-            total_bytes_up       = total_bytes_up,
-            total_bytes_down     = total_bytes_down,
-            round_duration_sec   = round_duration,
-            gradient_divergence  = gradient_divergence,
-            aggregation_time_sec = aggregation_time_sec,
-            algorithm_metadata   = algorithm_metadata or {},
-        )
+            num_completed = len([c for c in clients if c.status == "active"])
 
-        for e in self.emitters:
-            if hasattr(e, "on_round"):
-                try:
-                    e.on_round(summary, clients)
-                except Exception as ex:
-                    logger.warning(f"[hivewatch] emitter {type(e).__name__}.on_round failed: {ex}")
+            summary = RoundSummary(
+                round                = round,
+                global_accuracy      = global_accuracy,
+                global_loss          = global_loss,
+                num_selected         = num_selected if num_selected is not None else len(clients),
+                num_completed        = num_completed,
+                num_stragglers       = num_stragglers,
+                num_failures         = num_failures,
+                total_bytes_up       = total_bytes_up,
+                total_bytes_down     = total_bytes_down,
+                round_duration_sec   = round_duration,
+                gradient_norm_dispersion = gradient_norm_dispersion,
+                aggregation_time_sec = aggregation_time_sec,
+                algorithm_metadata   = algorithm_metadata or {},
+            )
+
+            for e in self.emitters:
+                if hasattr(e, "on_round"):
+                    try:
+                        e.on_round(summary, clients)
+                    except Exception as ex:
+                        logger.warning(f"[hivewatch] emitter {type(e).__name__}.on_round failed: {ex}")
 
         if self.verbose:
             acc_str  = f"{global_accuracy:.4f}" if global_accuracy is not None else "n/a"

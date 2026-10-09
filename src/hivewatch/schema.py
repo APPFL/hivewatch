@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import random
 import string
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
@@ -163,8 +164,10 @@ class RoundSummary:
         `total_bytes_up`      int     total bytes uploaded across all clients
         `total_bytes_down`    int     total bytes downloaded across all clients
         `round_duration_sec`  float   wall time for the round
-        `gradient_divergence` float   std dev of per-client gradient norms
-                                    — high value = non-IID data distribution
+        `gradient_norm_dispersion` float  std dev of per-client gradient norms;
+                                    a magnitude-only heterogeneity signal that
+                                    does not capture differences in gradient
+                                    direction (formerly `gradient_divergence`)
         `aggregation_time_sec` float  pure aggregation compute time
         `algorithm_metadata`  dict    algorithm-specific params
                                     e.g. {"mu": 0.01} for FedProx
@@ -180,7 +183,7 @@ class RoundSummary:
     total_bytes_up:       int            = 0
     total_bytes_down:     int            = 0
     round_duration_sec:   Optional[float] = None
-    gradient_divergence:  Optional[float] = None
+    gradient_norm_dispersion: Optional[float] = None
     aggregation_time_sec: Optional[float] = None
     algorithm_metadata:   Dict[str, Any]  = field(default_factory=dict)
 
@@ -196,7 +199,17 @@ class RoundSummary:
             "total_bytes_up":       self.total_bytes_up,
             "total_bytes_down":     self.total_bytes_down,
             "round_duration_sec":   self.round_duration_sec,
-            "gradient_divergence":  self.gradient_divergence,
+            "gradient_norm_dispersion": self.gradient_norm_dispersion,
             "aggregation_time_sec": self.aggregation_time_sec,
             "algorithm_metadata":   self.algorithm_metadata,
         }
+
+    @property
+    def gradient_divergence(self) -> Optional[float]:
+        """Deprecated alias for `gradient_norm_dispersion`."""
+        warnings.warn(
+            "RoundSummary.gradient_divergence is deprecated; use gradient_norm_dispersion",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.gradient_norm_dispersion

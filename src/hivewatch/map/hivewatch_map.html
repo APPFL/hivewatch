@@ -951,7 +951,7 @@ function buildRounds(events) {
         globalAcc:    rm.global_accuracy,
         globalLoss:   rm.global_loss,
         duration:     rm.round_duration_sec,
-        divergence:   rm.gradient_divergence,
+        dispersion:   rm.gradient_norm_dispersion ?? rm.gradient_divergence,
         clients:      Object.values(d.clients),
       };
     });

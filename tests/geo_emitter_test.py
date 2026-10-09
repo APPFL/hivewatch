@@ -40,7 +40,7 @@ def test_geo_emitter_persists_jsonl_and_map_metadata_with_custom_client_fields(t
             num_selected=1,
             num_completed=1,
             round_duration_sec=2.5,
-            gradient_divergence=0.0,
+            gradient_norm_dispersion=0.0,
         ),
         [client],
     )

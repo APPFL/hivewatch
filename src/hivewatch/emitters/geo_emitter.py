@@ -118,7 +118,7 @@ class GeoEmitter:
                 "num_completed":       summary.num_completed,
                 "num_stragglers":      summary.num_stragglers,
                 "round_duration_sec":  summary.round_duration_sec,
-                "gradient_divergence": summary.gradient_divergence,
+                "gradient_norm_dispersion": summary.gradient_norm_dispersion,
             },
             "clients": [self._client_dict(c) for c in clients],
         }
@@ -126,7 +126,7 @@ class GeoEmitter:
         round_state["globalAcc"] = summary.global_accuracy
         round_state["globalLoss"] = summary.global_loss
         round_state["duration"] = summary.round_duration_sec
-        round_state["divergence"] = summary.gradient_divergence
+        round_state["dispersion"] = summary.gradient_norm_dispersion
         for client in clients:
             self._upsert_client(summary.round, self._client_dict(client))
         self._append(payload)
@@ -246,7 +246,7 @@ class GeoEmitter:
             "globalAcc": None,
             "globalLoss": None,
             "duration": None,
-            "divergence": None,
+            "dispersion": None,
             "clients": [],
         }
         rounds.append(round_state)

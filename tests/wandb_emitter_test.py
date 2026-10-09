@@ -164,7 +164,7 @@ def test_wandb_on_round_logs_metrics_geo_and_finish_flushes_table(fake_wandb):
         total_bytes_up=1_500_000,
         total_bytes_down=250_000,
         round_duration_sec=6.0,
-        gradient_divergence=0.15,
+        gradient_norm_dispersion=0.15,
         aggregation_time_sec=0.6,
         algorithm_metadata={"mu": 0.01},
     )
@@ -177,6 +177,7 @@ def test_wandb_on_round_logs_metrics_geo_and_finish_flushes_table(fake_wandb):
     assert payload["round"] == 5
     assert payload["round/participation_rate"] == pytest.approx(0.5)
     assert payload["comm/total_bytes_mb"] == pytest.approx(1.75)
+    assert payload["agg/gradient_norm_dispersion"] == pytest.approx(0.15)
     assert payload["agg/algo/mu"] == pytest.approx(0.01)
     assert payload["client/client-1/status"] == 1
     assert payload["sys/client-1/gpu_vram_mb"] == pytest.approx(512.0)

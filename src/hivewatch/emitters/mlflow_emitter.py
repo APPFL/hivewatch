@@ -188,8 +188,8 @@ class MLflowEmitter:
             metrics["comm/bytes_per_client_mb"] = up_mb / summary.num_completed
 
         # Aggregation
-        if summary.gradient_divergence is not None:
-            metrics["agg/gradient_divergence"] = summary.gradient_divergence
+        if summary.gradient_norm_dispersion is not None:
+            metrics["agg/gradient_norm_dispersion"] = summary.gradient_norm_dispersion
         if summary.aggregation_time_sec is not None:
             metrics["agg/aggregation_time_sec"] = summary.aggregation_time_sec
         for k, v in summary.algorithm_metadata.items():

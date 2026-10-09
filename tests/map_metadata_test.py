@@ -24,7 +24,7 @@ def test_build_rounds_merges_client_updates_and_status_events():
                 "global_accuracy": 0.75,
                 "global_loss": 0.4,
                 "round_duration_sec": 3.2,
-                "gradient_divergence": 0.12,
+                "gradient_norm_dispersion": 0.12,
             },
             "clients": [
                 {
@@ -45,7 +45,7 @@ def test_build_rounds_merges_client_updates_and_status_events():
     assert round_two["globalAcc"] == 0.75
     assert round_two["globalLoss"] == 0.4
     assert round_two["duration"] == 3.2
-    assert round_two["divergence"] == 0.12
+    assert round_two["dispersion"] == 0.12
 
     clients = {client["client_id"]: client for client in round_two["clients"]}
     assert clients["client-a"]["local_accuracy"] == 0.6
@@ -55,6 +55,21 @@ def test_build_rounds_merges_client_updates_and_status_events():
     assert clients["client-b"]["local_accuracy"] == 0.7
 
     assert rounds[1]["clients"] == [{"client_id": "client-b", "status": "failed"}]
+
+
+def test_build_rounds_reads_legacy_gradient_divergence_key():
+    events = [
+        {
+            "event_type": "round_end",
+            "round": 1,
+            "round_metrics": {"gradient_divergence": 0.3},
+            "clients": [],
+        },
+    ]
+
+    rounds = build_rounds_from_events(events)
+
+    assert rounds[0]["dispersion"] == 0.3
 
 
 def test_build_map_metadata_includes_run_server_rounds_and_finish_time():
