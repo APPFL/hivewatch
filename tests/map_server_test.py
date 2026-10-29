@@ -98,6 +98,22 @@ def test_map_server_serves_runs_events_metadata_and_map_file(tmp_path, running_s
     assert response.headers["Access-Control-Allow-Origin"] == "*"
 
 
+def test_map_server_ignores_query_strings_when_routing(tmp_path, running_server):
+    write_jsonl(
+        tmp_path / "run-abc.jsonl",
+        [{"event_type": "init", "run_id": "run-abc", "algorithm": "FedAvg"}],
+    )
+    map_file = tmp_path / "viewer.html"
+    map_file.write_text("<html>custom map</html>", encoding="utf-8")
+
+    _, base_url = running_server(map_path=str(map_file))
+
+    for path in ("/?view=globe", "/map?run_id=run-abc&view=globe"):
+        _, body = get_text_response(base_url, path)
+        assert body == "<html>custom map</html>"
+    assert get_json(base_url, "/runs?refresh=1")[0]["run_id"] == "run-abc"
+
+
 def test_map_server_prefers_prebuilt_metadata_file(tmp_path, running_server):
     write_jsonl(
         tmp_path / "run-abc.jsonl",

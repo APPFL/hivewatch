@@ -59,6 +59,26 @@ Common map commands
    # Bind the dashboard to a specific interface
    hivewatch map run --host 0.0.0.0 --runs-dir runs --port 7070
 
+Globe view
+----------
+
+The **Map / Globe** switch in the dashboard header shows the same clients,
+server, and client-to-server links on an interactive orthographic globe. Live
+updates, replay, and the sidebar work the same in either view, and switching
+keeps the part of the world you were looking at.
+
+* Drag or use the arrow keys to rotate; scroll or use ``+`` / ``-`` to zoom.
+* ``Space`` pauses or resumes the rotation, ``Home`` resets the view, and
+  ``Esc`` closes an open client card. The rotation stays off when the browser
+  asks for reduced motion.
+* Click a marker, or a client card in the sidebar, to turn the globe to that
+  client and open its details.
+* Add ``?view=globe`` to the dashboard URL to open on the globe.
+
+Like the Leaflet map and its tiles, the globe loads its libraries (d3,
+topojson-client) and the Natural Earth land outline from public CDNs. It does
+so the first time the globe is opened, so the flat map loads nothing extra.
+
 Deferred viewing
 ----------------
 

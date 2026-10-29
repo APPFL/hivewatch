@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from socketserver import ThreadingMixIn
 from typing import Dict, List, Optional
+from urllib.parse import urlsplit
 
 from .metadata import build_map_metadata_from_events
 
@@ -64,7 +65,9 @@ class MapServer:
                 self.end_headers()
 
             def do_GET(self):
-                path = self.path.rstrip("/")
+                # Route on the path alone: the viewer reads its options (?view=,
+                # ?run_id=, ...) from the query string of the page URL.
+                path = urlsplit(self.path).path.rstrip("/")
 
                 if path == "" or path == "/map":
                     self._serve_map()

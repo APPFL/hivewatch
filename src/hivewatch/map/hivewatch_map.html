@@ -147,6 +147,22 @@
   .log-entry.drop   { border-left:2px solid var(--red); }
 
   #debug { position:absolute; top:16px; right:16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:10px; color:var(--muted); z-index:999; box-shadow:0 2px 8px rgba(0,0,0,0.08); opacity:0.9; }
+
+  /* Map / globe view switch and the globe view */
+  .view-switch { display:flex; gap:2px; padding:3px; border:1px solid var(--border); border-radius:8px; background:var(--bg); }
+  .view-switch button { background:transparent; border:none; border-radius:6px; padding:4px 10px; font-family:inherit; font-size:10px; letter-spacing:0.5px; color:var(--muted); cursor:pointer; transition:all 0.15s; }
+  .view-switch button:hover { color:var(--accent); }
+  .view-switch button[aria-pressed="true"] { background:var(--surface); color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+  .view-switch button:disabled { cursor:progress; opacity:0.6; }
+  #globe { flex:1; position:relative; min-height:0; overflow:hidden; }
+  #map[hidden], #globe[hidden], .globe-controls[hidden] { display:none; }
+  .globe-canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; outline:none; }
+  .globe-canvas:focus-visible { box-shadow:inset 0 0 0 2px var(--accent); }
+  .globe-tooltip { position:absolute; z-index:5; pointer-events:none; min-width:190px; max-width:260px; padding:10px 12px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 32px rgba(0,0,0,0.15); font-size:11px; }
+  .globe-controls { position:absolute; left:50%; bottom:68px; transform:translateX(-50%); z-index:500; display:flex; align-items:center; gap:2px; padding:4px; background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+  .globe-controls button { background:transparent; border:none; border-radius:5px; padding:6px 10px; font-family:inherit; font-size:12px; color:var(--muted); cursor:pointer; transition:all 0.15s; }
+  .globe-controls button:hover { background:var(--bg); color:var(--accent); }
+  .globe-controls #globe-spin { font-size:10px; }
 </style>
 </head>
 <body>
@@ -165,6 +181,10 @@
     <div class="status-pill">
       <div class="status-dot" id="status-dot"></div>
       <span id="status-text">connecting…</span>
+    </div>
+    <div class="view-switch" role="group" aria-label="Map view">
+      <button id="view-map" aria-pressed="true" onclick="setView('map', true)">Map</button>
+      <button id="view-globe" aria-pressed="false" onclick="setView('globe', true)">Globe</button>
     </div>
     <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle dark mode">🌙</button>
   </div>
@@ -212,6 +232,14 @@
   <!-- Map + playback -->
   <div class="map-area">
     <div id="map"></div>
+    <div id="globe" hidden></div>
+
+    <div class="globe-controls" id="globe-controls" hidden>
+      <button id="globe-spin" aria-pressed="true" onclick="hwGlobe?.setSpinning(!hwGlobe.spinning)">Pause rotation</button>
+      <button onclick="hwGlobe?.zoom(0.15)" aria-label="Zoom globe in" title="Zoom in">+</button>
+      <button onclick="hwGlobe?.zoom(-0.15)" aria-label="Zoom globe out" title="Zoom out">−</button>
+      <button onclick="hwGlobe?.reset()" aria-label="Reset globe view" title="Reset view">↺</button>
+    </div>
 
     <div id="debug">
       SSE: <span id="dbg-sse" style="color:var(--red)">disconnected</span><br>
@@ -243,6 +271,459 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// Orthographic globe of the same clients and server the Leaflet map shows, drawn on a
+// canvas with d3-geo. d3 and the land outline are only fetched the first time the globe
+// is opened (see loadGlobeAssets), so the flat map costs nothing extra.
+const GLOBE_TAU  = Math.PI * 2;
+const GLOBE_HOME = [62, -28, 0];
+const globeClamp = (value, low, high) => Math.max(low, Math.min(high, value));
+
+class HiveGlobe {
+  constructor(container, land, options = {}) {
+    this.container  = container;
+    this.land       = land;
+    this.options    = options;
+    this.clients    = [];
+    this.server     = null;
+    this.visible    = false;
+    this.rotation   = GLOBE_HOME.slice();
+    this.zoomFactor = 1;
+    this.motion     = window.matchMedia("(prefers-reduced-motion: reduce)");
+    this.spinning   = !this.motion.matches;
+    this.frame      = null;
+    this.lastFrame  = null;
+    this.hitTargets = [];
+    this.hovered    = null;   // key of the marker under the pointer
+    this.pinned     = null;   // key of the marker opened by a click or from the sidebar
+    this.tooltipHtml = null;
+    this.drag       = null;
+    this.width = this.height = this.radius = 0;
+
+    this.canvas = document.createElement("canvas");
+    this.canvas.className = "globe-canvas";
+    this.canvas.tabIndex = 0;
+    this.canvas.setAttribute("role", "img");
+    this.canvas.setAttribute("aria-label",
+      "Globe of clients and server. Drag or use the arrow keys to rotate, scroll or use plus and minus to zoom, " +
+      "Space pauses rotation, Home resets the view. Select a client in the sidebar to turn the globe to it.");
+    this.context = this.canvas.getContext("2d");
+    this.tooltip = document.createElement("div");
+    this.tooltip.className = "globe-tooltip";
+    this.tooltip.hidden = true;
+    container.append(this.canvas, this.tooltip);
+
+    this.projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
+    this.path       = d3.geoPath(this.projection, this.context);
+    this.graticule  = d3.geoGraticule().step([20, 20])();
+
+    const readTheme = () => document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    this.theme = readTheme();
+    new MutationObserver(() => { this.theme = readTheme(); this.draw(); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    new ResizeObserver(() => this.resize()).observe(container);
+    this._bindEvents();
+    this.resize();
+  }
+
+  setData(clients, server) {
+    const placed = item => item && Number.isFinite(item.lat) && Number.isFinite(item.lng);
+    this.clients = clients.filter(placed);
+    this.server  = placed(server) ? server : null;
+    this.draw();
+    this._schedule();
+  }
+
+  setVisible(visible) {
+    this.visible = Boolean(visible);
+    if (!this.visible) {
+      this.hovered = this.pinned = null;
+      this.tooltip.hidden = true;
+    }
+    this.resize();
+    this._schedule();
+  }
+
+  setSpinning(spinning) {
+    this.spinning = Boolean(spinning);
+    if (this.options.onSpinChange) this.options.onSpinChange(this.spinning);
+    this._schedule();
+  }
+
+  // Turn to a point and open its card, as clicking a client card flies the map to it.
+  focus(lat, lng, key = null) {
+    this.setSpinning(false);
+    this.rotation = [-lng, globeClamp(-lat, -85, 85), 0];
+    this.hovered = null;
+    this.pinned = key;
+    this.draw();
+  }
+
+  zoom(delta) {
+    if (!Number.isFinite(delta)) return;
+    this.zoomFactor = globeClamp(this.zoomFactor * Math.exp(delta), 0.68, 2.6);
+    this.draw();
+  }
+
+  reset() {
+    this.rotation = GLOBE_HOME.slice();
+    this.zoomFactor = 1;
+    this.pinned = null;
+    this.draw();
+  }
+
+  // What the globe is looking at, for the flat map to take over: the point at the centre,
+  // and the radius, which is also the globe's scale there in pixels per radian.
+  getView() {
+    // Dragging and spinning accumulate longitude without bound; fold it back to ±180.
+    const lng = ((-this.rotation[0] + 180) % 360 + 360) % 360 - 180;
+    return { lat: -this.rotation[1], lng, radius: this._radius() };
+  }
+
+  // The reverse: turn to a point and zoom to a radius, without changing whether it spins.
+  // Needs a measured globe, so it is called once the globe is visible.
+  setView({ lat, lng, radius }) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !this.width || !this.height) return;
+    this.rotation = [-lng, globeClamp(-lat, -85, 85), 0];
+    if (Number.isFinite(radius)) this.zoomFactor = globeClamp(radius / this._radius(1), 0.68, 2.6);
+    this.draw();
+  }
+
+  _radius(zoomFactor = this.zoomFactor) {
+    return Math.min(this.width, this.height) * 0.405 * zoomFactor;
+  }
+
+  resize() {
+    const rect = this.container.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    this.width  = rect.width;
+    this.height = rect.height;
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    this.canvas.width  = Math.round(this.width * ratio);
+    this.canvas.height = Math.round(this.height * ratio);
+    this.context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    this.draw();
+  }
+
+  _color(client) {
+    return this.options.colorFor ? this.options.colorFor(client) : "#3b82f6";
+  }
+
+  _bindEvents() {
+    const local = event => {
+      const rect = this.canvas.getBoundingClientRect();
+      return [event.clientX - rect.left, event.clientY - rect.top];
+    };
+    this.canvas.addEventListener("pointerdown", event => {
+      if (event.button !== 0 || this.drag) return;
+      this.canvas.focus({ preventScroll: true });
+      this.canvas.setPointerCapture(event.pointerId);
+      this.drag = { id: event.pointerId, origin: local(event), rotation: this.rotation.slice(), moved: false };
+      this.canvas.style.cursor = "grabbing";
+    });
+    this.canvas.addEventListener("pointermove", event => {
+      const point = local(event);
+      if (this.drag && this.drag.id === event.pointerId) {
+        const dx = point[0] - this.drag.origin[0];
+        const dy = point[1] - this.drag.origin[1];
+        if (!this.drag.moved) {
+          if (Math.hypot(dx, dy) <= 4) return;
+          this.drag.moved = true;
+          this.hovered = null;
+          this.setSpinning(false);
+        }
+        const sensitivity = 70 / Math.max(this.radius, 1);
+        this.rotation = [this.drag.rotation[0] + dx * sensitivity,
+          globeClamp(this.drag.rotation[1] - dy * sensitivity, -85, 85), 0];
+        this.draw();
+      } else if (!this.drag) {
+        const hit = this._hit(point);
+        this.canvas.style.cursor = hit ? "pointer" : "grab";
+        if ((hit ? hit.key : null) !== this.hovered) {
+          this.hovered = hit ? hit.key : null;
+          this.draw();
+          this._schedule();
+        }
+      }
+    });
+    const finishDrag = (event, cancelled = false) => {
+      if (!this.drag || this.drag.id !== event.pointerId) return;
+      const clicked = !cancelled && !this.drag.moved;
+      this.drag = null;
+      if (this.canvas.hasPointerCapture(event.pointerId)) this.canvas.releasePointerCapture(event.pointerId);
+      this.canvas.style.cursor = "grab";
+      if (clicked) {
+        const hit = this._hit(local(event));
+        if (hit && !hit.server && this.options.onSelect) this.options.onSelect(hit.item.client_id);
+        else { this.pinned = hit ? hit.key : null; this.draw(); }
+      }
+      this._schedule();
+    };
+    this.canvas.addEventListener("pointerup", event => finishDrag(event));
+    this.canvas.addEventListener("pointercancel", event => finishDrag(event, true));
+    this.canvas.addEventListener("lostpointercapture", event => finishDrag(event, true));
+    this.canvas.addEventListener("pointerleave", () => {
+      this.hovered = null;
+      this.draw();
+      this._schedule();
+    });
+    this.canvas.addEventListener("wheel", event => {
+      event.preventDefault();
+      this.setSpinning(false);
+      const units = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.height : 1;
+      this.zoom(-globeClamp(event.deltaY * units, -160, 160) * 0.002);
+    }, { passive: false });
+    this.canvas.addEventListener("keydown", event => {
+      const moves = { ArrowLeft: [-7, 0], ArrowRight: [7, 0], ArrowUp: [0, 7], ArrowDown: [0, -7] };
+      if (moves[event.key]) {
+        event.preventDefault();
+        this.setSpinning(false);
+        this.rotation[0] += moves[event.key][0];
+        this.rotation[1] = globeClamp(this.rotation[1] + moves[event.key][1], -85, 85);
+        this.draw();
+      } else if (["+", "=", "-", "_", " ", "Home", "Escape"].includes(event.key)) {
+        event.preventDefault();
+        if (event.key === " ") this.setSpinning(!this.spinning);
+        else if (event.key === "Home") this.reset();
+        else if (event.key === "Escape") { this.pinned = null; this.draw(); }
+        else this.zoom(event.key === "-" || event.key === "_" ? -0.18 : 0.18);
+      }
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) this.draw();
+      this._schedule();
+    });
+    this.motion.addEventListener("change", event => { if (event.matches) this.setSpinning(false); });
+  }
+
+  // Spins only while it is on screen and nothing is being pointed at or dragged.
+  _turning() {
+    return this.visible && !document.hidden && this.spinning && !this.drag && !this.hovered;
+  }
+
+  _schedule() {
+    if (!this._turning()) this.lastFrame = null;
+    else if (this.frame === null) this.frame = requestAnimationFrame(time => this._tick(time));
+  }
+
+  // A redraw on the next frame, for the moving packets; it shares the spin's frame, so the
+  // globe is drawn at most once per frame however many things move.
+  requestDraw() {
+    if (this.visible && !document.hidden && this.frame === null) {
+      this.frame = requestAnimationFrame(time => this._tick(time));
+    }
+  }
+
+  _tick(time) {
+    this.frame = null;
+    if (this._turning()) {
+      const elapsed = this.lastFrame === null ? 0 : Math.min(time - this.lastFrame, 64);
+      this.lastFrame = time;
+      this.rotation[0] = (this.rotation[0] + elapsed * 0.0035) % 360;
+    }
+    this.draw();
+    this._schedule();
+  }
+
+  _hit(point) {
+    let closest = null;
+    let distance = 15;
+    for (const target of this.hitTargets) {
+      const current = Math.hypot(point[0] - target.x, point[1] - target.y);
+      if (current < distance) { closest = target; distance = current; }
+    }
+    return closest;
+  }
+
+  draw() {
+    if (!this.visible || !this.width || !this.height || document.hidden) return;
+    const ctx = this.context;
+    const light = this.theme === "light";
+    const w = this.width, h = this.height;
+    const cx = w / 2, cy = h / 2;
+    const radius = this.radius = this._radius();
+    this.projection.translate([cx, cy]).scale(radius).rotate(this.rotation);
+    ctx.clearRect(0, 0, w, h);
+
+    const sky = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.7);
+    sky.addColorStop(0, light ? "#ffffff" : "#102639");
+    sky.addColorStop(0.6, light ? "#f0f7f9" : "#081726");
+    sky.addColorStop(1, light ? "#e2edf2" : "#060f1b");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+    // Fixed, deterministic stars stay still while the earth turns.
+    for (let i = 1; i <= 95; i++) {
+      const x = ((i * 7919) % 997) / 997 * w;
+      const y = ((i * 3571) % 991) / 991 * h;
+      ctx.fillStyle = light ? "rgba(82,139,160,.13)" : `rgba(171,210,228,${0.11 + (i % 4) * 0.06})`;
+      ctx.beginPath();
+      ctx.arc(x, y, i % 7 === 0 ? 1 : 0.6, 0, GLOBE_TAU);
+      ctx.fill();
+    }
+
+    const atmosphere = ctx.createRadialGradient(cx, cy, radius * 0.985, cx, cy, radius * 1.075);
+    atmosphere.addColorStop(0, light ? "rgba(56,165,188,.24)" : "rgba(90,219,232,.29)");
+    atmosphere.addColorStop(0.28, "rgba(58,174,207,.10)");
+    atmosphere.addColorStop(1, "rgba(35,123,167,0)");
+    ctx.fillStyle = atmosphere;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.075, 0, GLOBE_TAU);
+    ctx.fill();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, GLOBE_TAU);
+    ctx.clip();
+    const ocean = ctx.createRadialGradient(cx - radius * 0.36, cy - radius * 0.48, radius * 0.1, cx, cy, radius * 1.2);
+    ocean.addColorStop(0, light ? "#f6fcff" : "#163c52");
+    ocean.addColorStop(0.65, light ? "#d8edf5" : "#0c273e");
+    ocean.addColorStop(1, light ? "#bbdce7" : "#061321");
+    ctx.fillStyle = ocean;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+    ctx.beginPath();
+    this.path(this.graticule);
+    ctx.strokeStyle = light ? "rgba(63,119,141,.17)" : "rgba(138,193,211,.115)";
+    ctx.lineWidth = 0.65;
+    ctx.stroke();
+
+    const landFill = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
+    landFill.addColorStop(0, light ? "#bee4d9" : "#356b73");
+    landFill.addColorStop(0.5, light ? "#93c9bf" : "#25565f");
+    landFill.addColorStop(1, light ? "#6fa99f" : "#163d4e");
+    ctx.beginPath();
+    this.path(this.land);
+    ctx.fillStyle = landFill;
+    ctx.fill();
+    ctx.strokeStyle = light ? "rgba(51,121,127,.5)" : "rgba(121,205,206,.38)";
+    ctx.lineWidth = 0.65;
+    ctx.stroke();
+
+    // Limb shading gives the orthographic projection its spherical look.
+    const shade = ctx.createRadialGradient(cx - radius * 0.24, cy - radius * 0.2, radius * 0.25, cx, cy, radius);
+    shade.addColorStop(0, "rgba(0,6,17,0)");
+    shade.addColorStop(0.72, light ? "rgba(23,68,87,.01)" : "rgba(0,6,17,.03)");
+    shade.addColorStop(1, light ? "rgba(23,68,87,.16)" : "rgba(0,6,17,.59)");
+    ctx.fillStyle = shade;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+    // Client-to-server links, dashed like the map's. d3 draws a LineString as a great
+    // circle and clips it at the horizon.
+    if (this.server) {
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 1.6;
+      ctx.globalAlpha = light ? 0.75 : 0.65;
+      for (const client of this.clients) {
+        ctx.beginPath();
+        this.path({ type: "LineString",
+          coordinates: [[client.lng, client.lat], [this.server.lng, this.server.lat]] });
+        ctx.strokeStyle = this._color(client);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, GLOBE_TAU);
+    ctx.strokeStyle = light ? "rgba(49,132,155,.45)" : "rgba(131,229,235,.4)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    const center = this.projection.invert([cx, cy]);
+    const facing = item => {
+      const location = [item.lng, item.lat];
+      return d3.geoDistance(center, location) < Math.PI / 2 - 0.008 ? this.projection(location) : null;
+    };
+    this.hitTargets = [];
+    this._drawPackets(facing);
+    for (const client of this.clients) {
+      const point = facing(client);
+      if (point) this._drawMarker(point[0], point[1], `client:${client.client_id}`, client, false);
+    }
+    // Drawn last, so the server is never covered by a client at the same site.
+    const serverPoint = this.server && facing(this.server);
+    if (serverPoint) this._drawMarker(serverPoint[0], serverPoint[1], "server", this.server, true);
+    this._placeTooltip();
+  }
+
+  // The map's update packets: one in the client's colour going up its link to the server,
+  // and an orange one coming back down, placed along the great circle by the shared phase.
+  _drawPackets(facing) {
+    const phase = this.server && this.options.packets ? this.options.packets() : null;
+    if (!phase) return;
+    const ctx = this.context;
+    const server = [this.server.lng, this.server.lat];
+    const packet = (location, color) => {
+      const point = facing({ lng: location[0], lat: location[1] });
+      if (!point) return;
+      ctx.beginPath();
+      ctx.arc(point[0], point[1], 5, 0, GLOBE_TAU);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.95;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+    };
+    for (const client of this.clients) {
+      const link = d3.geoInterpolate([client.lng, client.lat], server);
+      packet(link(phase.upload), this._color(client));
+      if (phase.showDownload) packet(link(1 - phase.download), "#f59e0b");
+    }
+  }
+
+  // The same marker as the map's: a filled dot with a white ring and a soft halo.
+  _drawMarker(x, y, key, item, server) {
+    const ctx = this.context;
+    const color = server ? "#f59e0b" : this._color(item);
+    const active = key === this.hovered || key === this.pinned;
+    const core = (server ? 7 : 5) + (active ? 1.5 : 0);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, core + (server ? 5 : 4), 0, GLOBE_TAU);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = active ? 0.4 : 0.25;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.shadowColor = "rgba(0,0,0,.35)";
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(x, y, core, 0, GLOBE_TAU);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = server ? 2.5 : 2;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+    ctx.restore();
+    this.hitTargets.push({ x, y, key, item, server });
+  }
+
+  // The card for the hovered marker, else the pinned one; it follows the marker as the
+  // globe turns and hides when the marker goes over the horizon.
+  _placeTooltip() {
+    const key = this.hovered || this.pinned;
+    const target = key && this.hitTargets.find(t => t.key === key);
+    if (!target) {
+      this.tooltip.hidden = true;
+      return;
+    }
+    const html = this.options.describe ? this.options.describe(target.item, target.server) : "";
+    if (html !== this.tooltipHtml) {
+      this.tooltip.innerHTML = html;
+      this.tooltipHtml = html;
+    }
+    this.tooltip.hidden = false;
+    const tw = this.tooltip.offsetWidth, th = this.tooltip.offsetHeight;
+    const right = target.x + 18;
+    const left = right + tw + 8 <= this.width ? right : target.x - 18 - tw;
+    this.tooltip.style.left = `${globeClamp(left, 8, Math.max(8, this.width - tw - 8))}px`;
+    this.tooltip.style.top  = `${globeClamp(target.y - th / 2, 8, Math.max(8, this.height - th - 8))}px`;
+  }
+}
+</script>
 <script>
 const params = new URLSearchParams(window.location.search);
 const defaultServer = window.location.origin && window.location.origin !== "null"
@@ -324,6 +805,7 @@ const serverIcon = L.divIcon({
   iconSize:[20,20], iconAnchor:[10,10],
 });
 let serverMarker = null;
+let currentServer = null;
 let serverResolvedFromMetadata = false;
 let serverInferredFromClient = false;
 
@@ -353,6 +835,7 @@ function buildServerPopup(server) {
 function renderServerMarker(server) {
   if (!server || !Number.isFinite(server.lat) || !Number.isFinite(server.lng)) return;
   SERVER_LL = [server.lat, server.lng];
+  currentServer = server;
   const popup = buildServerPopup(server);
   if (serverMarker) {
     serverMarker.setLatLng(SERVER_LL).setPopupContent(popup);
@@ -366,6 +849,7 @@ function renderServerMarker(server) {
     const client = state.clients[id];
     if (client?.lat && client?.lng) line.setLatLngs([[client.lat, client.lng], SERVER_LL]);
   });
+  syncGlobe();
 }
 
 function inferServerFromClient(client) {
@@ -437,6 +921,7 @@ const networkAnim = {
   cycleMs: state.roundDurationMs,
   replay: false,
   endpointTimer: null,
+  phase: null,   // where the packets are on their links: { upload, download, showDownload }
 };
 
 function accColor(acc) {
@@ -558,6 +1043,8 @@ function stopNetworkAnimation() {
 
 function setReplayPacketsAtFinalState() {
   networkAnim.endpointTimer = null;
+  networkAnim.phase = { upload: 1, download: 1, showDownload: true };
+  hwGlobe?.requestDraw();
   Object.keys(lines).forEach(id => {
     const client = state.clients[id];
     if (!packets[id]) return;
@@ -588,6 +1075,9 @@ function animateNetworkTraffic(now) {
   const uploadProgress = networkAnim.replay ? Math.min(1, cycle / uploadPhase) : pingPong(cycle);
   const downloadProgress = networkAnim.replay ? Math.max(0, (cycle - downloadStart) / (1 - downloadStart)) : pingPong((cycle + 0.5) % 1);
   const showDownload = !networkAnim.replay || cycle >= downloadStart;
+  // The globe draws its packets from the same phase, so both views move in step.
+  networkAnim.phase = { upload: uploadProgress, download: downloadProgress, showDownload };
+  hwGlobe?.requestDraw();
 
   activeIds.forEach(id => {
     const client = state.clients[id];
@@ -617,6 +1107,17 @@ function syncNetworkAnimation(durationMs, minDurationMs = 1200, replay = false) 
   }
 }
 
+function buildClientPopup(id, c) {
+  return `
+    <div class="popup-title">📡 ${id}</div>
+    <div class="popup-row"><span class="popup-key">Location</span><span class="popup-value">${c.city||"—"}, ${c.country||""}</span></div>
+    <div class="popup-row"><span class="popup-key">Accuracy</span><span class="popup-value">${fmtAcc(c.local_accuracy)}</span></div>
+    <div class="popup-row"><span class="popup-key">Loss</span><span class="popup-value">${fmtLoss(c.local_loss)}</span></div>
+    <div class="popup-row"><span class="popup-key">Samples</span><span class="popup-value">${c.num_samples||"—"}</span></div>
+    <div class="popup-row"><span class="popup-key">Status</span><span class="popup-value">${c.status||"active"}</span></div>
+  `;
+}
+
 function upsertClient(id, data) {
   state.clients[id] = Object.assign(state.clients[id] || {}, data);
   const c = state.clients[id];
@@ -634,14 +1135,7 @@ function upsertClient(id, data) {
     iconSize:[14,14], iconAnchor:[7,7],
   });
 
-  const popup = `
-    <div class="popup-title">📡 ${id}</div>
-    <div class="popup-row"><span class="popup-key">Location</span><span class="popup-value">${c.city||"—"}, ${c.country||""}</span></div>
-    <div class="popup-row"><span class="popup-key">Accuracy</span><span class="popup-value">${fmtAcc(c.local_accuracy)}</span></div>
-    <div class="popup-row"><span class="popup-key">Loss</span><span class="popup-value">${fmtLoss(c.local_loss)}</span></div>
-    <div class="popup-row"><span class="popup-key">Samples</span><span class="popup-value">${c.num_samples||"—"}</span></div>
-    <div class="popup-row"><span class="popup-key">Status</span><span class="popup-value">${c.status||"active"}</span></div>
-  `;
+  const popup = buildClientPopup(id, c);
 
   if (markers[id]) {
     markers[id].setLatLng(ll).setIcon(icon).setPopupContent(popup);
@@ -664,6 +1158,7 @@ function upsertClient(id, data) {
 
 function clearMap() {
   stopNetworkAnimation();
+  networkAnim.phase = null;
   Object.values(markers).forEach(m => m.remove());
   Object.values(lines).forEach(l => l.remove());
   Object.values(packets).forEach(pair => {
@@ -702,11 +1197,124 @@ function renderSidebar() {
       </div>
     `).join("") ||
     '<div style="color:var(--muted);font-size:11px;padding:12px;text-align:center;">Waiting for clients…</div>';
+  syncGlobe();
 }
 
 function focusClient(id) {
   const c = state.clients[id];
-  if (c?.lat && c?.lng) { map.flyTo([c.lat,c.lng],5,{duration:1.2}); markers[id]?.openPopup(); }
+  if (!(c?.lat && c?.lng)) return;
+  if (currentView === "globe") hwGlobe.focus(c.lat, c.lng, `client:${id}`);
+  else { map.flyTo([c.lat,c.lng],5,{duration:1.2}); markers[id]?.openPopup(); }
+}
+
+// ── Globe view ────────────────────────────────────────────────────────────────
+// The globe and its assets are created on first use; the Leaflet map keeps all state,
+// and the globe is redrawn from it whenever the sidebar or the server marker changes.
+const GLOBE_ASSETS = {
+  d3:       "https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js",
+  topojson: "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js",
+  land:     "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-110m.json",
+};
+let hwGlobe = null;
+let currentView = "map";
+let viewRequest = 0;
+let globeAssets = null;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`could not load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+function loadGlobeAssets() {
+  if (!globeAssets) {
+    globeAssets = Promise.all([
+      loadScript(GLOBE_ASSETS.d3),
+      loadScript(GLOBE_ASSETS.topojson),
+      fetch(GLOBE_ASSETS.land).then(res => {
+        if (!res.ok) throw new Error(`could not load the land outline (HTTP ${res.status})`);
+        return res.json();
+      }),
+    ]).then(([, , world]) => topojson.feature(world, world.objects.land));
+    globeAssets.catch(() => { globeAssets = null; });   // let the next click retry
+  }
+  return globeAssets;
+}
+
+function syncGlobe() {
+  if (!hwGlobe) return;
+  hwGlobe.setData(Object.entries(state.clients).map(([id, c]) => ({ ...c, client_id: id })), currentServer);
+}
+
+function globeSpinChanged(spinning) {
+  const button = document.getElementById("globe-spin");
+  button.textContent = spinning ? "Pause rotation" : "Resume rotation";
+  button.setAttribute("aria-pressed", String(spinning));
+}
+
+// A switch carries the view across, so the other projection opens on the same part of the
+// world. Scale is matched at the centre: the globe's radius is its pixels per radian there,
+// and Web Mercator at zoom z draws 256·2^z / 2π pixels per radian, stretched by sec(lat).
+const viewLat = lat => Math.max(-85, Math.min(85, lat));
+const secant  = lat => 1 / Math.cos(viewLat(lat) * Math.PI / 180);
+
+function getMapView() {
+  const { lat, lng } = map.wrapLatLng(map.getCenter());
+  return { lat: viewLat(lat), lng, radius: 256 * 2 ** map.getZoom() / (2 * Math.PI) * secant(lat) };
+}
+
+function setMapView({ lat, lng, radius }) {
+  map.setView([viewLat(lat), lng], Math.log2(radius * 2 * Math.PI / (256 * secant(lat))), { animate: false });
+}
+
+// carry: a switch the user made, which keeps their place. ?view=globe opens the globe on
+// its own default view instead of the map's initial one.
+async function setView(view, carry = false) {
+  const request = ++viewRequest;
+  if (view === currentView) return;
+  if (view === "globe" && !hwGlobe) {
+    const button = document.getElementById("view-globe");
+    button.disabled = true;
+    try {
+      const land = await loadGlobeAssets();
+      hwGlobe = hwGlobe || new HiveGlobe(document.getElementById("globe"), land, {
+        colorFor:     client => accColor(client.local_accuracy),
+        describe:     (item, isServer) => isServer ? buildServerPopup(item) : buildClientPopup(item.client_id, item),
+        onSelect:     focusClient,
+        onSpinChange: globeSpinChanged,
+        packets:      () => networkAnim.phase,
+      });
+      globeSpinChanged(hwGlobe.spinning);
+    } catch (err) {
+      addLog(`Globe unavailable — ${err.message}`, "drop");
+      return;
+    } finally {
+      button.disabled = false;
+    }
+    if (request !== viewRequest) return;   // the user picked another view while it loaded
+  }
+
+  const carried = carry ? (view === "globe" ? getMapView() : hwGlobe.getView()) : null;
+  currentView = view;
+  map.closePopup();
+  document.getElementById("map").hidden = view !== "map";
+  document.getElementById("globe").hidden = view !== "globe";
+  document.getElementById("globe-controls").hidden = view !== "globe";
+  document.getElementById("view-map").setAttribute("aria-pressed", String(view === "map"));
+  document.getElementById("view-globe").setAttribute("aria-pressed", String(view === "globe"));
+  hwGlobe?.setVisible(view === "globe");
+  if (view === "globe") {
+    syncGlobe();
+    if (carried) hwGlobe.setView(carried);
+  } else {
+    // Leaflet measured 0×0 while hidden.
+    map.invalidateSize();
+    if (carried) setMapView(carried);
+  }
 }
 function addLog(msg, type="update") {
   const now = new Date().toLocaleTimeString("en",{hour12:false});
@@ -1291,6 +1899,7 @@ function connect() {
   };
 }
 initDraggableLogPanel();
+if (params.get("view") === "globe") setView("globe");
 if (METADATA_URL || EVENTS_URL) {
   loadRunFromSource({
     metadataUrl: METADATA_URL,

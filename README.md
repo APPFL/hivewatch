@@ -88,6 +88,10 @@ event history for older runs. It displays non-geographic client metadata in the
 sidebar automatically. Prefix a client metadata key with `_` when the value
 should remain in the saved artifact but stay hidden from the map card.
 
+The **Map / Globe** switch in the dashboard header shows the same clients and
+server on an interactive 3D globe. Add `?view=globe` to the dashboard URL to
+open on it.
+
 ### Package layout
 
 The source tree groups related functionality into focused areas:
